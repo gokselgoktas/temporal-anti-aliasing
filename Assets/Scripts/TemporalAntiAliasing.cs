@@ -1,15 +1,14 @@
-using System;
 using UnityEngine;
 
-namespace UnitySampleAssets.ImageEffects
+namespace UnityStandardAssets.CinematicEffects
 {
     [ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]
-    [AddComponentMenu("Image Effects/Temporal Anti-aliasing")]
+    [AddComponentMenu("Image Effects/Cinematic/Temporal Anti-aliasing")]
     public class TemporalAntiAliasing : MonoBehaviour
     {
         [Range(0f, 3f)]
-        public float jitterScale = 0.3f;
+        public float jitterScale = 1f;
 
         [Range(4, 128)]
         public int haltonSequenceLength = 8;
@@ -21,10 +20,10 @@ namespace UnitySampleAssets.ImageEffects
         public float sharpenFilterWidth = 1f;
 
         [Range(0.9f, 1f)]
-        public float staticBlurAmount = 0.9f;
+        public float staticBlurAmount = 0.98f;
 
         [Range(0.6f, 0.9f)]
-        public float motionBlurAmount = 0.75f;
+        public float motionBlurAmount = 0.8f;
 
         [Range(3000f, 10000f)]
         public float motionAmplificationAmount = 6000f;
