@@ -190,6 +190,7 @@ namespace UnitySampleAssets.ImageEffects
             }
 
             camera_.depthTextureMode &= ~(DepthTextureMode.MotionVectors);
+            m_SampleIndex = 0;
         }
 
         void OnPreCull()
