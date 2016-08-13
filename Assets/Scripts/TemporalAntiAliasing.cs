@@ -72,8 +72,6 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        private Matrix4x4 m_PreviousViewProjectionMatrix;
-
         private RenderTexture m_History;
         private int m_SampleIndex = 0;
 
