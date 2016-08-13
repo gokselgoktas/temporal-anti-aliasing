@@ -230,6 +230,7 @@ namespace UnityStandardAssets.CinematicEffects
             GL.PopMatrix();
         }
 
+        [ImageEffectOpaque]
         public void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
             if (camera_.orthographic)
