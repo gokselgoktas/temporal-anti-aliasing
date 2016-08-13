@@ -409,7 +409,7 @@ Shader "Hidden/Temporal Anti-aliasing"
         Pass
         {
             CGPROGRAM
-            #pragma target 4.1
+            #pragma target 4.0
             #pragma vertex vertex
             #pragma fragment fragment
             ENDCG
