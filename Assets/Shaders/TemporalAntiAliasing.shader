@@ -17,8 +17,9 @@ Shader "Hidden/Temporal Anti-aliasing"
 
     #define TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES 1
 
-    #define TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN 1
+    #define TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN 2
     #define TAA_COLOR_NEIGHBORHOOD_SAMPLE_SPREAD 1.
+    #define TAA_COLOR_NEIGHBORHOOD_LUMA_SPAN .125
 
     #define TAA_DILATE_MOTION_VECTOR_SAMPLE 1
 
@@ -291,7 +292,7 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         float4 minimum = min(min(min(min(neighborhood[0], neighborhood[1]), neighborhood[2]), neighborhood[3]), color);
         float4 maximum = max(max(max(max(neighborhood[0], neighborhood[1]), neighborhood[2]), neighborhood[3]), color);
-    #else
+    #elif TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN == 1
         // 0 1 2
         // 3
         float4x4 top = float4x4(
@@ -340,6 +341,36 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         float4 minimum = min(min(min(min(min(min(min(min(top[0], top[1]), top[2]), top[3]), bottom[0]), bottom[1]), bottom[2]), bottom[3]), color);
         float4 maximum = max(max(max(max(max(max(max(max(top[0], top[1]), top[2]), top[3]), bottom[0]), bottom[1]), bottom[2]), bottom[3]), color);
+    #else
+        float4 topLeft = tex2D(_MainTex, mainUV - k * .5);
+        float4 bottomRight = tex2D(_MainTex, mainUV + k * .5);
+
+        float4 corners = 4. * (topLeft + bottomRight) - 2. * color;
+
+        #if TAA_SHARPEN_OUTPUT
+            color += (color - (corners * .166667)) * _SharpenParameters.x;
+            color = max(0, color);
+        #endif
+
+        #if TAA_CLIP_HISTORY_SAMPLE
+            float4 average = (corners + color) * .142857;
+
+            #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
+                average = map(average);
+            #endif
+        #endif
+
+        #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
+            topLeft = map(topLeft);
+            bottomRight = map(bottomRight);
+
+            color = map(color);
+        #endif
+
+        float2 luma = float2(Luminance(topLeft.rgb), Luminance(bottomRight.rgb));
+
+        float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y)) - color * TAA_COLOR_NEIGHBORHOOD_LUMA_SPAN;
+        float4 maximum = lerp(topLeft, bottomRight, step(luma.x, luma.y)) + color * TAA_COLOR_NEIGHBORHOOD_LUMA_SPAN;
     #endif
 
         k = TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD * _HistoryTex_TexelSize.xy;
@@ -360,13 +391,17 @@ Shader "Hidden/Temporal Anti-aliasing"
         history = clamp(history, minimum, maximum);
     #endif
 
-        float2 luma = float2(Luminance(color.rgb), Luminance(history.rgb));
-
     #if TAA_FINAL_BLEND_METHOD == 0
         // Constant blend factor, works most of the time & cheap; but isn't as nice as a derivative of Sousa 13
         color = lerp(color, history, TAA_FINAL_BLEND_FACTOR);
     #elif TAA_FINAL_BLEND_METHOD == 1
         // Implements the final blend method from Playdead's TAA implementation
+        #if TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN < 2
+            float2
+        #endif
+
+        luma = float2(Luminance(color.rgb), Luminance(history.rgb));
+
         float weight = 1. - abs(luma.x - luma.y) / max(luma.x, max(luma.y, .2));
         color = lerp(color, history, lerp(.88, .97, weight * weight));
     #elif TAA_FINAL_BLEND_METHOD == 2
