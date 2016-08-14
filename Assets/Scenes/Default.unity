@@ -255,9 +255,8 @@ MonoBehaviour:
   jitterScale: 1
   haltonSequenceLength: 8
   sharpeningAmount: 0.25
-  sharpenFilterWidth: 1
-  staticBlurAmount: 0.9
-  motionBlurAmount: 0.75
+  staticBlurAmount: 0.98
+  motionBlurAmount: 0.8
   motionAmplificationAmount: 6000
 --- !u!1 &1743816215
 GameObject:

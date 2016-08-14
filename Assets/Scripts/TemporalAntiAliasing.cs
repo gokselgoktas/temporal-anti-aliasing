@@ -10,25 +10,25 @@ namespace UnityStandardAssets.CinematicEffects
     [AddComponentMenu("Image Effects/Cinematic/Temporal Anti-aliasing")]
     public class TemporalAntiAliasing : MonoBehaviour
     {
-        [Range(0f, 3f)]
+        [SerializeField, Range(0f, 3f)]
         public float jitterScale = 1f;
 
-        [Range(4, 128)]
-        public int haltonSequenceLength = 8;
+        [SerializeField, Range(4, 128)]
+        private int haltonSequenceLength = 8;
 
-        [Range(0f, 1f)]
+        [SerializeField, Range(0f, 1f)]
         public float sharpeningAmount = 0.25f;
 
         [Range(0f, 2f)]
-        public float sharpenFilterWidth = 1f;
+        private float sharpenFilterWidth = 1f;
 
-        [Range(0.9f, 1f)]
+        [SerializeField, Range(0.9f, 1f)]
         public float staticBlurAmount = 0.98f;
 
-        [Range(0.6f, 0.9f)]
+        [SerializeField, Range(0.6f, 0.9f)]
         public float motionBlurAmount = 0.8f;
 
-        [Range(3000f, 10000f)]
+        [SerializeField, Range(3000f, 10000f)]
         public float motionAmplificationAmount = 6000f;
 
         private Shader m_Shader;
@@ -108,7 +108,7 @@ namespace UnityStandardAssets.CinematicEffects
             return 0.0f;
         }
 
-        private float GetHaltonValue(int index, int radix)
+        public static float GetHaltonValue(int index, int radix)
         {
             float result = 0.0f;
             float fraction = 1.0f / (float)radix;
