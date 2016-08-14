@@ -148,25 +148,25 @@ Shader "Hidden/Temporal Anti-aliasing"
                 result.z = min(min(min(neighborhood.x, neighborhood.y), neighborhood.z), neighborhood.w);
 
                 if (result.z == neighborhood.x)
-                    result.xy = float2(-1., -1.);
+                    result.xy = -k;
                 else if (result.z == neighborhood.y)
-                    result.xy = float2(1., -1.);
+                    result.xy = float2(k.x, -k.y);
                 else if (result.z == neighborhood.z)
-                    result.xy = float2(-1., 1.);
+                    result.xy = float2(-k.x, k.y);
                 else
-                    result.xy = float2(1., 1.);
+                    result.xy = k;
             #else
                 if (neighborhood.x < result.z)
-                    result = float3(-1., -1., neighborhood.x);
+                    result = float3(-k.x, -k.y, neighborhood.x);
 
                 if (neighborhood.y < result.z)
-                    result = float3(1., -1., neighborhood.y);
+                    result = float3(k.x, -k.y, neighborhood.y);
 
                 if (neighborhood.z < result.z)
-                    result = float3(-1., 1., neighborhood.z);
+                    result = float3(-k.x, k.y, neighborhood.z);
 
                 if (neighborhood.w < result.z)
-                    result = float3(1., 1., neighborhood.w);
+                    result = float3(k.x, k.y, neighborhood.w);
             #endif
         #else
             const float3x3 neighborhood = float3x3(
@@ -180,31 +180,31 @@ Shader "Hidden/Temporal Anti-aliasing"
                 tex2D(_CameraDepthTexture, uv + float2(0., k.y)).r,
                 tex2D(_CameraDepthTexture, uv + k).r);
 
-            float3 result = float3(-1., -1., neighborhood._m00);
+            float3 result = float3(-k.x, -k.y, neighborhood._m00);
 
             if (neighborhood._m01 < result.z)
-                result = float3(0., -1., neighborhood._m01);
+                result = float3(0., -k.y, neighborhood._m01);
 
             if (neighborhood._m02 < result.z)
-                result = float3(1., -1., neighborhood._m02);
+                result = float3(k.x, -k.y, neighborhood._m02);
 
             if (neighborhood._m10 < result.z)
-                result = float3(-1., 0., neighborhood._m10);
+                result = float3(-k.x, 0., neighborhood._m10);
 
             if (neighborhood._m11 < result.z)
                 result = float3(0., 0., neighborhood._m11);
 
             if (neighborhood._m12 < result.z)
-                result = float3(1., 0., neighborhood._m12);
+                result = float3(k.x, 0., neighborhood._m12);
 
             if (neighborhood._m20 < result.z)
-                result = float3(-1., 1., neighborhood._m20);
+                result = float3(-k.x, k.y, neighborhood._m20);
 
             if (neighborhood._m21 < result.z)
-                result = float3(0., 1., neighborhood._m21);
+                result = float3(0., k.y, neighborhood._m21);
 
             if (neighborhood._m22 < result.z)
-                result = float3(1., 1., neighborhood._m22);
+                result = float3(k.x, k.y, neighborhood._m22);
         #endif
 
         return (uv + result.xy * k);
