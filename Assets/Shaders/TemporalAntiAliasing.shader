@@ -383,8 +383,6 @@ Shader "Hidden/Temporal Anti-aliasing"
     #endif
 
     #if TAA_CLIP_HISTORY_SAMPLE
-        average = clamp(average, minimum, maximum);
-
         //# History clipping causes artifacts
         history = clipToAABB(history, average.w, minimum.xyz, maximum.xyz);
     #else
