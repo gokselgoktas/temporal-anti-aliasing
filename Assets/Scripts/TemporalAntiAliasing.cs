@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace UnityStandardAssets.CinematicEffects
@@ -10,26 +11,101 @@ namespace UnityStandardAssets.CinematicEffects
     [AddComponentMenu("Image Effects/Cinematic/Temporal Anti-aliasing")]
     public class TemporalAntiAliasing : MonoBehaviour
     {
-        [SerializeField, Range(0f, 3f)]
-        public float jitterScale = 1f;
+        public enum Sequence
+        {
+            Halton
+        }
 
-        [SerializeField, Range(4, 128)]
-        private int haltonSequenceLength = 8;
+        [Serializable]
+        public struct JitterSettings
+        {
+            [Tooltip("The sequence used to generate the points used as jitter offsets.")]
+            public Sequence sequence;
 
-        [SerializeField, Range(0f, 1f)]
-        public float sharpeningAmount = 0.25f;
+            [Tooltip("The diameter (in texels) inside which jitter samples are spread. Smaller values result in crisper but more aliased output, while larger values result in more stable but blurrier output.")]
+            [Range(0.1f, 3f)]
+            public float spread;
 
-        [Range(0f, 2f)]
-        private float sharpenFilterWidth = 1f;
+            [Tooltip("Number of temporal samples. A larger value results in a smoother image but takes longer to converge; whereas a smaller value converges fast but allows for less subpixel information.")]
+            [Range(4, 64)]
+            public int sampleCount;
+        }
 
-        [SerializeField, Range(0.9f, 1f)]
-        public float staticBlurAmount = 0.98f;
+        [Serializable]
+        public struct SharpenFilterSettings
+        {
+            [Tooltip("Controls the amount of sharpening applied to the color buffer.")]
+            [Range(0f, 3f)]
+            public float amount;
+        }
 
-        [SerializeField, Range(0.6f, 0.9f)]
-        public float motionBlurAmount = 0.8f;
+        [Serializable]
+        public struct BlendSettings
+        {
+            [Tooltip("The blend coefficient for a stationary fragment. Controls the percentage of history sample blended into the final color.")]
+            [Range(0f, 1f)]
+            public float stationary;
 
-        [SerializeField, Range(3000f, 10000f)]
-        public float motionAmplificationAmount = 6000f;
+            [Tooltip("The blend coefficient for a fragment with significant motion. Controls the percentage of history sample blended into the final color.")]
+            [Range(0f, 1f)]
+            public float moving;
+
+            [Tooltip("Amount of motion amplification in percentage. A higher value will make the final blend more sensitive to smaller motion, but might result in more aliased output; while a smaller value might desensitivize the algorithm resulting in a blurry output.")]
+            [Range(30f, 100f)]
+            public float motionAmplification;
+        }
+
+        [Serializable]
+        public class Settings
+        {
+            [AttributeUsage(AttributeTargets.Field)]
+            public class LayoutAttribute : PropertyAttribute
+            {
+            }
+
+            [Layout]
+            public JitterSettings jitterSettings;
+
+            [Layout]
+            public SharpenFilterSettings sharpenFilterSettings;
+
+            [Layout]
+            public BlendSettings blendSettings;
+
+            private static readonly Settings m_Default = new Settings
+            {
+                jitterSettings = new JitterSettings
+                {
+                    sequence = Sequence.Halton,
+                    spread = 1f,
+                    sampleCount = 8
+                },
+
+                sharpenFilterSettings = new SharpenFilterSettings
+                {
+                    amount = 0.25f
+                },
+
+                blendSettings = new BlendSettings
+                {
+                    stationary = 0.98f,
+                    moving = 0.8f,
+
+                    motionAmplification = 60f
+                }
+            };
+
+            public static Settings defaultSettings
+            {
+                get
+                {
+                    return m_Default;
+                }
+            }
+        }
+
+        [SerializeField]
+        public Settings settings = Settings.defaultSettings;
 
         private Shader m_Shader;
         public Shader shader
@@ -108,7 +184,7 @@ namespace UnityStandardAssets.CinematicEffects
             return 0.0f;
         }
 
-        public static float GetHaltonValue(int index, int radix)
+        private float GetHaltonValue(int index, int radix)
         {
             float result = 0.0f;
             float fraction = 1.0f / (float)radix;
@@ -130,7 +206,7 @@ namespace UnityStandardAssets.CinematicEffects
                     GetHaltonValue(m_SampleIndex & 1023, 2),
                     GetHaltonValue(m_SampleIndex & 1023, 3));
 
-            if (++m_SampleIndex >= haltonSequenceLength)
+            if (++m_SampleIndex >= settings.jitterSettings.sampleCount)
                 m_SampleIndex = 0;
 
             return offset;
@@ -196,7 +272,7 @@ namespace UnityStandardAssets.CinematicEffects
         void OnPreCull()
         {
             Vector2 jitter = GenerateRandomOffset();
-            jitter *= jitterScale;
+            jitter *= settings.jitterSettings.spread;
 
 #if UNITY_5_4_OR_NEWER
             camera_.nonJitteredProjectionMatrix = camera_.projectionMatrix;
@@ -251,8 +327,8 @@ namespace UnityStandardAssets.CinematicEffects
                 Graphics.Blit(source, m_History);
             }
 
-            material.SetVector("_SharpenParameters", new Vector4(sharpeningAmount, sharpenFilterWidth, 1f / source.width, 1f / source.height));
-            material.SetVector("_FinalBlendParameters", new Vector4(staticBlurAmount, motionBlurAmount, motionAmplificationAmount));
+            material.SetVector("_SharpenParameters", new Vector4(settings.sharpenFilterSettings.amount, 0f, 0f, 0f));
+            material.SetVector("_FinalBlendParameters", new Vector4(settings.blendSettings.stationary, settings.blendSettings.moving, 100f * settings.blendSettings.motionAmplification, 0f));
             material.SetTexture("_HistoryTex", m_History);
             material.SetTexture("_MainTex", source);
 
