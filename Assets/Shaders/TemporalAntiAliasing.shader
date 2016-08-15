@@ -24,8 +24,6 @@ Shader "Hidden/Temporal Anti-aliasing"
 
     #define TAA_CLIP_HISTORY_SAMPLE 1
 
-    #define TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD 0.5
-
     #define TAA_DEPTH_SAMPLE_PATTERN 0
     #define TAA_DEPTH_SAMPLE_SPREAD 1.
 
@@ -241,7 +239,7 @@ Shader "Hidden/Temporal Anti-aliasing"
         float2 motion = tex2D(_CameraMotionVectorsTexture, input.uv.zw).xy;
     #endif
 
-        float2 k = TAA_COLOR_NEIGHBORHOOD_SAMPLE_SPREAD * _MainTex_TexelSize.xy;
+        const float2 k = TAA_COLOR_NEIGHBORHOOD_SAMPLE_SPREAD * _MainTex_TexelSize.xy;
         float2 uv = input.uv.xy;
     #if TAA_REMOVE_COLOR_SAMPLE_JITTER && UNITY_UV_STARTS_AT_TOP
         uv -= _MainTex_TexelSize.y < 0 ? _Jitter * float2(1, -1) : _Jitter;
@@ -365,8 +363,6 @@ Shader "Hidden/Temporal Anti-aliasing"
         float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y));
         float4 maximum = lerp(topLeft, bottomRight, step(luma.x, luma.y));
     #endif
-
-        k = TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD * _HistoryTex_TexelSize.xy;
 
         float4 history = tex2D(_HistoryTex, input.uv.zw - motion);
 
