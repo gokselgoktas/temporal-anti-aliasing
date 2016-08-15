@@ -99,15 +99,29 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        private CommandBuffer m_TemporalAntiAliasingCommandBuffer;
-        private CommandBuffer m_HistoryBlitCommandBuffer;
+        private CommandBuffer m_CommandBuffer;
+        private CommandBuffer commandBuffer
+        {
+            get
+            {
+                if (m_CommandBuffer == null)
+                {
+                    m_CommandBuffer = new CommandBuffer();
+                    m_CommandBuffer.name = "Temporal Anti-aliasing";
+                }
+
+                return m_CommandBuffer;
+            }
+        }
 
         static private int kTemporaryTexture;
 
         private RenderTexture m_History;
         private RenderTargetIdentifier m_HistoryIdentifier;
+
         private RenderTextureFormat m_IntermediateFormat;
 
+        private bool m_IsFirstFrame = true;
         private int m_SampleIndex = 0;
 
         private float GetCatmullRomValue(float k)
@@ -223,13 +237,9 @@ namespace UnityStandardAssets.CinematicEffects
 
             m_HistoryIdentifier = new RenderTargetIdentifier(m_History);
 
-            m_HistoryBlitCommandBuffer = new CommandBuffer();
-            m_HistoryBlitCommandBuffer.name = "Temporal Anti-aliasing (History Blit)";
+            kTemporaryTexture = Shader.PropertyToID("_BlitSourceTex");
 
-            m_HistoryBlitCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, m_HistoryIdentifier);
-            camera_.AddCommandBuffer(CameraEvent.AfterImageEffectsOpaque, m_HistoryBlitCommandBuffer);
-
-            kTemporaryTexture = Shader.PropertyToID("_TemporaryTex");
+            m_IsFirstFrame = true;
         }
 
         void OnDisable()
@@ -243,16 +253,10 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (camera_ != null)
             {
-                if (m_HistoryBlitCommandBuffer != null)
+                if (m_CommandBuffer != null)
                 {
-                    camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, m_HistoryBlitCommandBuffer);
-                    m_HistoryBlitCommandBuffer = null;
-                }
-
-                if (m_TemporalAntiAliasingCommandBuffer != null)
-                {
-                    camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, m_TemporalAntiAliasingCommandBuffer);
-                    m_TemporalAntiAliasingCommandBuffer = null;
+                    camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, m_CommandBuffer);
+                    m_CommandBuffer = null;
                 }
             }
 
@@ -265,21 +269,14 @@ namespace UnityStandardAssets.CinematicEffects
         {
             if (camera_ != null)
             {
-                if (m_TemporalAntiAliasingCommandBuffer != null)
+                if (m_CommandBuffer != null)
                 {
-                    camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, m_TemporalAntiAliasingCommandBuffer);
-                    m_TemporalAntiAliasingCommandBuffer = null;
-                }
-
-                if (m_HistoryBlitCommandBuffer != null)
-                {
-                    camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, m_HistoryBlitCommandBuffer);
-                    m_HistoryBlitCommandBuffer = null;
+                    camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, m_CommandBuffer);
+                    m_CommandBuffer = null;
                 }
             }
         }
 #endif
-
         void OnPreCull()
         {
             Vector2 jitter = GenerateRandomOffset();
@@ -298,22 +295,30 @@ namespace UnityStandardAssets.CinematicEffects
 
         void OnPreRender()
         {
-            if (m_TemporalAntiAliasingCommandBuffer == null)
+            camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, commandBuffer);
+            commandBuffer.Clear();
+
+            if (m_IsFirstFrame)
             {
-                m_TemporalAntiAliasingCommandBuffer = new CommandBuffer();
-                m_TemporalAntiAliasingCommandBuffer.name = "Temporal Anti-aliasing";
-
-                m_TemporalAntiAliasingCommandBuffer.GetTemporaryRT(kTemporaryTexture, camera_.pixelWidth, camera_.pixelHeight, 0, FilterMode.Bilinear, m_IntermediateFormat);
-
-                m_TemporalAntiAliasingCommandBuffer.SetGlobalTexture("_HistoryTex", m_HistoryIdentifier);
-                m_TemporalAntiAliasingCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, kTemporaryTexture, material);
-
-                m_TemporalAntiAliasingCommandBuffer.Blit(kTemporaryTexture, BuiltinRenderTextureType.CameraTarget);
-                m_TemporalAntiAliasingCommandBuffer.Blit(kTemporaryTexture, m_HistoryIdentifier);
-                m_TemporalAntiAliasingCommandBuffer.ReleaseTemporaryRT(kTemporaryTexture);
-
-                camera_.AddCommandBuffer(CameraEvent.AfterImageEffectsOpaque, m_TemporalAntiAliasingCommandBuffer);
+                commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, m_HistoryIdentifier);
+                m_IsFirstFrame = false;
             }
+
+            commandBuffer.GetTemporaryRT(kTemporaryTexture, camera_.pixelWidth, camera_.pixelHeight, 0, FilterMode.Bilinear, m_IntermediateFormat);
+
+            commandBuffer.SetGlobalTexture("_HistoryTex", m_HistoryIdentifier);
+            commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, kTemporaryTexture, material, 0);
+
+            var renderTargets = new RenderTargetIdentifier[2];
+            renderTargets[0] = BuiltinRenderTextureType.CameraTarget;
+            renderTargets[1] = m_HistoryIdentifier;
+
+            commandBuffer.SetRenderTarget(renderTargets, BuiltinRenderTextureType.CameraTarget);
+            commandBuffer.DrawMesh(quad, Matrix4x4.identity, material, 0, 1);
+
+            commandBuffer.ReleaseTemporaryRT(kTemporaryTexture);
+
+            camera_.AddCommandBuffer(CameraEvent.AfterImageEffectsOpaque, commandBuffer);
 
             material.SetVector("_SharpenParameters", new Vector4(sharpeningAmount, sharpenFilterWidth, 0f, 0f));
             material.SetVector("_FinalBlendParameters", new Vector4(staticBlurAmount, motionBlurAmount, motionAmplificationAmount));
@@ -322,12 +327,6 @@ namespace UnityStandardAssets.CinematicEffects
         public void OnPostRender()
         {
             camera_.ResetProjectionMatrix();
-
-            if (m_HistoryBlitCommandBuffer != null)
-            {
-                camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, m_HistoryBlitCommandBuffer);
-                m_HistoryBlitCommandBuffer = null;
-            }
         }
     }
 }
