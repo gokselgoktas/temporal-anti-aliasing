@@ -55,7 +55,6 @@ Shader "Hidden/Temporal Anti-aliasing"
         float4 history : SV_Target1;
     };
 
-
     sampler2D _MainTex;
     sampler2D _HistoryTex;
 
@@ -135,16 +134,10 @@ Shader "Hidden/Temporal Anti-aliasing"
         float3 result = float3(0., 0., tex2D(_CameraDepthTexture, uv).r);
 
         #if TAA_USE_EXPERIMENTAL_OPTIMIZATIONS
-            result.z = min(min(min(neighborhood.x, neighborhood.y), neighborhood.z), neighborhood.w);
-
-            if (result.z == neighborhood.x)
-                result.xy = float2(-1., -1.);
-            else if (result.z == neighborhood.y)
-                result.xy = float2(1., -1.);
-            else if (result.z == neighborhood.z)
-                result.xy = float2(-1., 1.);
-            else
-                result.xy = float2(1., 1.);
+            result = lerp(result, float3(-1., -1., neighborhood.x), step(neighborhood.x, result.z));
+            result = lerp(result, float3(1., -1., neighborhood.y), step(neighborhood.y, result.z));
+            result = lerp(result, float3(-1., 1., neighborhood.z), step(neighborhood.z, result.z));
+            result = lerp(result, float3(1., 1., neighborhood.w), step(neighborhood.w, result.z));
         #else
             if (neighborhood.x < result.z)
                 result = float3(-1., -1., neighborhood.x);
