@@ -252,13 +252,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bdfccaf741b3445e8c50a3e1eb59acc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jitterScale: 1
-  haltonSequenceLength: 8
-  sharpeningAmount: 0.25
-  sharpenFilterWidth: 1
-  staticBlurAmount: 0.9
-  motionBlurAmount: 0.75
-  motionAmplificationAmount: 6000
+  settings:
+    jitterSettings:
+      sequence: 0
+      spread: 1
+      sampleCount: 8
+    sharpenFilterSettings:
+      amount: 0.25
+    blendSettings:
+      stationary: 0.98
+      moving: 0.8
+      motionAmplification: 60
 --- !u!1 &1743816215
 GameObject:
   m_ObjectHideFlags: 0
