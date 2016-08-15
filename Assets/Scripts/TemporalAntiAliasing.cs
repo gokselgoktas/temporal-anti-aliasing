@@ -340,5 +340,13 @@ namespace UnityStandardAssets.CinematicEffects
 
             RenderTexture.active = destination;
         }
+        
+        #if UNITY_EDITOR
+            private void OnGUI()
+            {
+                if (!UnityEditor.EditorApplication.isPlaying)
+                UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+            }  
+        #endif
     }
 }
