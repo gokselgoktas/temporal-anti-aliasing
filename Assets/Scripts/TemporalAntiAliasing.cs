@@ -221,6 +221,9 @@ namespace UnityStandardAssets.CinematicEffects
 
         void OnEnable()
         {
+#if !UNITY_5_4_OR_NEWER
+            enabled = false;
+#endif
             camera_.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
         }
 
