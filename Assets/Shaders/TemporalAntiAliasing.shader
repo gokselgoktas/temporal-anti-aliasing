@@ -52,8 +52,6 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         float2 mainTexUV : TEXCOORD0;
         float2 defaultUV  : TEXCOORD1;
-
-        float4 position : TEXCOORD2;
     };
 
     struct Output
@@ -92,7 +90,6 @@ Shader "Hidden/Temporal Anti-aliasing"
         output.vertex = vertex;
         output.mainTexUV = input.uv;
         output.defaultUV = input.uv;
-        output.position = vertex;
 
     #if UNITY_UV_STARTS_AT_TOP
         if (_MainTex_TexelSize.y < 0)

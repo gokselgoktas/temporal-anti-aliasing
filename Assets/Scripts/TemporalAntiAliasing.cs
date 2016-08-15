@@ -75,39 +75,6 @@ namespace UnityStandardAssets.CinematicEffects
         private RenderTexture m_History;
         private int m_SampleIndex = 0;
 
-        private float GetCatmullRomValue(float k)
-        {
-            k = Mathf.Abs(k);
-
-            if (k > 1.0f)
-            {
-                return ((-0.5f * k + 2.5f) * k - 4.0f) * k + 2.0f;
-            }
-
-            return (1.5f * k - 2.5f) * k * k + 1.0f;
-        }
-
-        private float GetMitchellNetravaliValue(float k, float b, float c)
-        {
-            k = Mathf.Abs(k);
-
-            if (k < 1.0f)
-            {
-                return ((12.0f - 9.0f * b - 6.0f * c) * k * k * k +
-                        (-18.0f + 12.0f * b + 6.0f * c) * k * k +
-                        (6.0f - 2.0f * b)) / 6.0f;
-            }
-            else if ((k >= 1.0f) && (k < 2.0f))
-            {
-                return ((-b - 6.0f * c) * k * k * k +
-                        (6.0f * b + 30.0f * c) * k * k +
-                        (-12.0f * b - 48.0f * c) * k +
-                        (8.0f * b + 24.0f * c)) / 6.0f;
-            }
-
-            return 0.0f;
-        }
-
         private float GetHaltonValue(int index, int radix)
         {
             float result = 0.0f;
