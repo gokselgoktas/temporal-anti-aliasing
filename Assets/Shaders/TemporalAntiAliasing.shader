@@ -24,7 +24,6 @@ Shader "Hidden/Temporal Anti-aliasing"
 
     #define TAA_CLIP_HISTORY_SAMPLE 1
 
-    #define TAA_DEPTH_SAMPLE_PATTERN 0
     #define TAA_DEPTH_SAMPLE_SPREAD 1.
 
     #define TAA_SHARPEN_OUTPUT 1
@@ -127,76 +126,37 @@ Shader "Hidden/Temporal Anti-aliasing"
     {
         const float2 k = TAA_DEPTH_SAMPLE_SPREAD * _CameraDepthTexture_TexelSize.xy;
 
-        #if TAA_DEPTH_SAMPLE_PATTERN == 0
-            const float4 neighborhood = float4(
-                tex2D(_CameraDepthTexture, uv - k).r,
-                tex2D(_CameraDepthTexture, uv + float2(k.x, -k.y)).r,
-                tex2D(_CameraDepthTexture, uv + float2(-k.x, k.y)).r,
-                tex2D(_CameraDepthTexture, uv + k).r);
+        const float4 neighborhood = float4(
+            tex2D(_CameraDepthTexture, uv - k).r,
+            tex2D(_CameraDepthTexture, uv + float2(k.x, -k.y)).r,
+            tex2D(_CameraDepthTexture, uv + float2(-k.x, k.y)).r,
+            tex2D(_CameraDepthTexture, uv + k).r);
 
-            float3 result = float3(0., 0., tex2D(_CameraDepthTexture, uv).r);
+        float3 result = float3(0., 0., tex2D(_CameraDepthTexture, uv).r);
 
-            #if TAA_USE_EXPERIMENTAL_OPTIMIZATIONS
-                result.z = min(min(min(neighborhood.x, neighborhood.y), neighborhood.z), neighborhood.w);
+        #if TAA_USE_EXPERIMENTAL_OPTIMIZATIONS
+            result.z = min(min(min(neighborhood.x, neighborhood.y), neighborhood.z), neighborhood.w);
 
-                if (result.z == neighborhood.x)
-                    result.xy = float2(-1., -1.);
-                else if (result.z == neighborhood.y)
-                    result.xy = float2(1., -1.);
-                else if (result.z == neighborhood.z)
-                    result.xy = float2(-1., 1.);
-                else
-                    result.xy = float2(1., 1.);
-            #else
-                if (neighborhood.x < result.z)
-                    result = float3(-1., -1., neighborhood.x);
-
-                if (neighborhood.y < result.z)
-                    result = float3(1., -1., neighborhood.y);
-
-                if (neighborhood.z < result.z)
-                    result = float3(-1., 1., neighborhood.z);
-
-                if (neighborhood.w < result.z)
-                    result = float3(1., 1., neighborhood.w);
-            #endif
+            if (result.z == neighborhood.x)
+                result.xy = float2(-1., -1.);
+            else if (result.z == neighborhood.y)
+                result.xy = float2(1., -1.);
+            else if (result.z == neighborhood.z)
+                result.xy = float2(-1., 1.);
+            else
+                result.xy = float2(1., 1.);
         #else
-            const float3x3 neighborhood = float3x3(
-                tex2D(_CameraDepthTexture, uv - k).r,
-                tex2D(_CameraDepthTexture, uv - float2(0., k.y)).r,
-                tex2D(_CameraDepthTexture, uv + float2(k.x, -k.y)).r,
-                tex2D(_CameraDepthTexture, uv - float2(k.x, 0.)).r,
-                tex2D(_CameraDepthTexture, uv).r,
-                tex2D(_CameraDepthTexture, uv + float2(k.x, 0.)).r,
-                tex2D(_CameraDepthTexture, uv + float2(-k.x, k.y)).r,
-                tex2D(_CameraDepthTexture, uv + float2(0., k.y)).r,
-                tex2D(_CameraDepthTexture, uv + k).r);
+            if (neighborhood.x < result.z)
+                result = float3(-1., -1., neighborhood.x);
 
-            float3 result = float3(-1., -1., neighborhood._m00);
+            if (neighborhood.y < result.z)
+                result = float3(1., -1., neighborhood.y);
 
-            if (neighborhood._m01 < result.z)
-                result = float3(0., -1., neighborhood._m01);
+            if (neighborhood.z < result.z)
+                result = float3(-1., 1., neighborhood.z);
 
-            if (neighborhood._m02 < result.z)
-                result = float3(1., -1., neighborhood._m02);
-
-            if (neighborhood._m10 < result.z)
-                result = float3(-1., 0., neighborhood._m10);
-
-            if (neighborhood._m11 < result.z)
-                result = float3(0., 0., neighborhood._m11);
-
-            if (neighborhood._m12 < result.z)
-                result = float3(1., 0., neighborhood._m12);
-
-            if (neighborhood._m20 < result.z)
-                result = float3(-1., 1., neighborhood._m20);
-
-            if (neighborhood._m21 < result.z)
-                result = float3(0., 1., neighborhood._m21);
-
-            if (neighborhood._m22 < result.z)
-                result = float3(1., 1., neighborhood._m22);
+            if (neighborhood.w < result.z)
+                result = float3(1., 1., neighborhood.w);
         #endif
 
         return (uv + result.xy * k);
@@ -371,7 +331,7 @@ Shader "Hidden/Temporal Anti-aliasing"
     #endif
 
     #if TAA_CLIP_HISTORY_SAMPLE
-        //# History clipping causes artifacts
+        // History clipping causes artifacts
         history = clipToAABB(history, average.w, minimum.xyz, maximum.xyz);
     #else
         history = clamp(history, minimum, maximum);
