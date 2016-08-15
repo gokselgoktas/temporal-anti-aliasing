@@ -296,25 +296,22 @@ Shader "Hidden/Temporal Anti-aliasing"
             color = max(0, color);
         #endif
 
-        #if TAA_CLIP_HISTORY_SAMPLE
-            float4 average = (corners + color) * .142857;
-
-            #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
-                average = map(average);
-            #endif
-        #endif
+        float4 average = (corners + color) * .142857;
 
         #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
+            average = map(average);
+
             topLeft = map(topLeft);
             bottomRight = map(bottomRight);
 
             color = map(color);
         #endif
 
+        float nudge = length(average - color);
         float2 luma = float2(Luminance(topLeft.rgb), Luminance(bottomRight.rgb));
 
-        float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y));
-        float4 maximum = lerp(topLeft, bottomRight, step(luma.x, luma.y));
+        float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y)) - nudge;
+        float4 maximum = lerp(topLeft, bottomRight, step(luma.x, luma.y)) + nudge;
     #endif
 
         float4 history = tex2D(_HistoryTex, input.uv.zw - motion);
