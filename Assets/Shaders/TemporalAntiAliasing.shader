@@ -341,7 +341,7 @@ Shader "Hidden/Temporal Anti-aliasing"
         float4 corners = 4. * (topLeft + bottomRight) - 2. * color;
 
         #if TAA_SHARPEN_OUTPUT
-            color += (color - (corners * .166667)) * _SharpenParameters.x;
+            color += (color - (corners * .166667)) * 2.718282 * _SharpenParameters.x;
             color = max(0, color);
         #endif
 
