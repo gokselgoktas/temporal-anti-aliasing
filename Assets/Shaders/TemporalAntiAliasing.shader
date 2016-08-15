@@ -19,7 +19,6 @@ Shader "Hidden/Temporal Anti-aliasing"
 
     #define TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN 2
     #define TAA_COLOR_NEIGHBORHOOD_SAMPLE_SPREAD 1.
-    #define TAA_COLOR_NEIGHBORHOOD_LUMA_SPAN .125
 
     #define TAA_DILATE_MOTION_VECTOR_SAMPLE 1
 
@@ -369,8 +368,8 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         float2 luma = float2(Luminance(topLeft.rgb), Luminance(bottomRight.rgb));
 
-        float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y)) - color * TAA_COLOR_NEIGHBORHOOD_LUMA_SPAN;
-        float4 maximum = lerp(topLeft, bottomRight, step(luma.x, luma.y)) + color * TAA_COLOR_NEIGHBORHOOD_LUMA_SPAN;
+        float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y));
+        float4 maximum = lerp(topLeft, bottomRight, step(luma.x, luma.y));
     #endif
 
         k = TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD * _HistoryTex_TexelSize.xy;
