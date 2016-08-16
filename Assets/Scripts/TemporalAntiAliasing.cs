@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace UnityStandardAssets.CinematicEffects
 {
@@ -107,32 +108,61 @@ namespace UnityStandardAssets.CinematicEffects
         [SerializeField]
         public Settings settings = Settings.defaultSettings;
 
-        private Shader m_Shader;
-        public Shader shader
+        private Shader m_EffectShader;
+        public Shader effectShader
         {
             get
             {
-                if (m_Shader == null)
-                    m_Shader = Shader.Find("Hidden/Temporal Anti-aliasing");
+                if (m_EffectShader == null)
+                    m_EffectShader = Shader.Find("Hidden/Temporal Anti-aliasing");
 
-                return m_Shader;
+                return m_EffectShader;
             }
         }
 
-        private Material m_Material;
-        public Material material
+        private Material m_EffectMaterial;
+        public Material effectMaterial
         {
             get
             {
-                if (m_Material == null)
+                if (m_EffectMaterial == null)
                 {
-                    if (shader == null || !shader.isSupported)
+                    if (effectShader == null || !effectShader.isSupported)
                         return null;
 
-                    m_Material = new Material(shader);
+                    m_EffectMaterial = new Material(effectShader);
                 }
 
-                return m_Material;
+                return m_EffectMaterial;
+            }
+        }
+
+        private Shader m_BlitShader;
+        private Shader blitShader
+        {
+            get
+            {
+                if (m_BlitShader == null)
+                    m_BlitShader = Shader.Find("Hidden/MRT Blit");
+
+                return m_BlitShader;
+            }
+        }
+
+        private Material m_BlitMaterial;
+        private Material blitMaterial
+        {
+            get
+            {
+                if (m_BlitMaterial == null)
+                {
+                    if (blitShader == null || !blitShader.isSupported)
+                        return null;
+
+                    m_BlitMaterial = new Material(blitShader);
+                }
+
+                return m_BlitMaterial;
             }
         }
 
@@ -148,7 +178,55 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
+        private Mesh m_Quad;
+        private Mesh quad
+        {
+            get
+            {
+                if (m_Quad == null)
+                {
+                    Vector3[] vertices = new Vector3[4]
+                    {
+                        new Vector3(1.0f, 1.0f, 0.0f),
+                        new Vector3(-1.0f, 1.0f, 0.0f),
+                        new Vector3(-1.0f, -1.0f, 0.0f),
+                        new Vector3(1.0f, -1.0f, 0.0f),
+                    };
+
+                    int[] indices = new int[6] { 0, 1, 2, 2, 3, 0 };
+
+                    m_Quad = new Mesh();
+                    m_Quad.vertices = vertices;
+                    m_Quad.triangles = indices;
+                }
+
+                return m_Quad;
+            }
+        }
+
+        private CommandBuffer m_CommandBuffer;
+        private CommandBuffer commandBuffer
+        {
+            get
+            {
+                if (m_CommandBuffer == null)
+                {
+                    m_CommandBuffer = new CommandBuffer();
+                    m_CommandBuffer.name = "Temporal Anti-aliasing";
+                }
+
+                return m_CommandBuffer;
+            }
+        }
+
+        static private int kTemporaryTexture;
+
         private RenderTexture m_History;
+        private RenderTargetIdentifier m_HistoryIdentifier;
+
+        private RenderTextureFormat m_IntermediateFormat;
+
+        private bool m_IsFirstFrame = true;
         private int m_SampleIndex = 0;
 
         private float GetHaltonValue(int index, int radix)
@@ -225,6 +303,18 @@ namespace UnityStandardAssets.CinematicEffects
             enabled = false;
 #endif
             camera_.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
+
+            m_IntermediateFormat = camera_.hdr ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
+
+            m_History = RenderTexture.GetTemporary(camera_.pixelWidth, camera_.pixelHeight, 0, m_IntermediateFormat, RenderTextureReadWrite.Default);
+            m_History.hideFlags = HideFlags.HideAndDontSave;
+            m_History.filterMode = FilterMode.Bilinear;
+
+            m_HistoryIdentifier = new RenderTargetIdentifier(m_History);
+
+            kTemporaryTexture = Shader.PropertyToID("_BlitSourceTex");
+
+            m_IsFirstFrame = true;
         }
 
         void OnDisable()
@@ -233,12 +323,35 @@ namespace UnityStandardAssets.CinematicEffects
             {
                 RenderTexture.ReleaseTemporary(m_History);
                 m_History = null;
+                m_HistoryIdentifier = 0;
+            }
+
+            if (camera_ != null)
+            {
+                if (m_CommandBuffer != null)
+                {
+                    camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, m_CommandBuffer);
+                    m_CommandBuffer = null;
+                }
             }
 
             camera_.depthTextureMode &= ~(DepthTextureMode.MotionVectors);
             m_SampleIndex = 0;
         }
 
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+            if (camera_ != null)
+            {
+                if (m_CommandBuffer != null)
+                {
+                    camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, m_CommandBuffer);
+                    m_CommandBuffer = null;
+                }
+            }
+        }
+#endif
         void OnPreCull()
         {
             Vector2 jitter = GenerateRandomOffset();
@@ -252,93 +365,43 @@ namespace UnityStandardAssets.CinematicEffects
             jitter.x /= camera_.pixelWidth;
             jitter.y /= camera_.pixelHeight;
 
-            material.SetVector("_Jitter", jitter);
+            effectMaterial.SetVector("_Jitter", jitter);
+        }
+
+        void OnPreRender()
+        {
+            camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, commandBuffer);
+            commandBuffer.Clear();
+
+            if (m_IsFirstFrame)
+            {
+                commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, m_HistoryIdentifier);
+                m_IsFirstFrame = false;
+            }
+
+            commandBuffer.GetTemporaryRT(kTemporaryTexture, camera_.pixelWidth, camera_.pixelHeight, 0, FilterMode.Bilinear, m_IntermediateFormat);
+
+            commandBuffer.SetGlobalTexture("_HistoryTex", m_HistoryIdentifier);
+            commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, kTemporaryTexture, effectMaterial, 0);
+
+            var renderTargets = new RenderTargetIdentifier[2];
+            renderTargets[0] = BuiltinRenderTextureType.CameraTarget;
+            renderTargets[1] = m_HistoryIdentifier;
+
+            commandBuffer.SetRenderTarget(renderTargets, BuiltinRenderTextureType.CameraTarget);
+            commandBuffer.DrawMesh(quad, Matrix4x4.identity, blitMaterial, 0, 0);
+
+            commandBuffer.ReleaseTemporaryRT(kTemporaryTexture);
+
+            camera_.AddCommandBuffer(CameraEvent.AfterImageEffectsOpaque, commandBuffer);
+
+            effectMaterial.SetVector("_SharpenParameters", new Vector4(settings.sharpenFilterSettings.amount, 0f, 0f, 0f));
+            effectMaterial.SetVector("_FinalBlendParameters", new Vector4(settings.blendSettings.stationary, settings.blendSettings.moving, 100f * settings.blendSettings.motionAmplification, 0f));
         }
 
         public void OnPostRender()
         {
             camera_.ResetProjectionMatrix();
-        }
-
-        private void RenderFullScreenQuad()
-        {
-            GL.PushMatrix();
-            GL.LoadOrtho();
-            material.SetPass(0);
-
-            //Render the full screen quad manually.
-            GL.Begin(GL.QUADS);
-            GL.TexCoord2(0.0f, 0.0f); GL.Vertex3(0.0f, 0.0f, 0.1f);
-            GL.TexCoord2(1.0f, 0.0f); GL.Vertex3(1.0f, 0.0f, 0.1f);
-            GL.TexCoord2(1.0f, 1.0f); GL.Vertex3(1.0f, 1.0f, 0.1f);
-            GL.TexCoord2(0.0f, 1.0f); GL.Vertex3(0.0f, 1.0f, 0.1f);
-            GL.End();
-
-            GL.PopMatrix();
-        }
-
-        [ImageEffectOpaque]
-        public void OnRenderImage(RenderTexture source, RenderTexture destination)
-        {
-            if (camera_.orthographic)
-            {
-                Graphics.Blit(source, destination);
-                return;
-            }
-            else if (m_History == null || (m_History.width != source.width || m_History.height != source.height))
-            {
-                if (m_History)
-                    RenderTexture.ReleaseTemporary(m_History);
-
-                m_History = RenderTexture.GetTemporary(source.width, source.height, 0, source.format, RenderTextureReadWrite.Default);
-                m_History.hideFlags = HideFlags.HideAndDontSave;
-                m_History.filterMode = FilterMode.Bilinear;
-
-                Graphics.Blit(source, m_History);
-            }
-
-            material.SetVector("_SharpenParameters", new Vector4(settings.sharpenFilterSettings.amount, 0f, 0f, 0f));
-            material.SetVector("_FinalBlendParameters", new Vector4(settings.blendSettings.stationary, settings.blendSettings.moving, 100f * settings.blendSettings.motionAmplification, 0f));
-            material.SetTexture("_HistoryTex", m_History);
-            material.SetTexture("_MainTex", source);
-
-            // generate a temp texture, this will become history next frame
-            RenderTexture temporary = RenderTexture.GetTemporary(source.width, source.height, 0, source.format, RenderTextureReadWrite.Default);
-            temporary.filterMode = FilterMode.Bilinear;
-
-            // destination can be null if we are writing to framebuffer
-            // this means we need an extra blit. Will only happen if
-            // taa is last in the effects stack
-            var destinationToUse = destination;
-            var needsExtraBlit = false;
-            if (destinationToUse == null)
-            {
-                destinationToUse = RenderTexture.GetTemporary(source.width, source.height, 0, source.format, RenderTextureReadWrite.Default);
-                destinationToUse.filterMode = FilterMode.Bilinear;
-                needsExtraBlit = true;
-            }
-
-            // set up MRT, we can do this all in one pass :)
-            var mrt = new RenderBuffer[2];
-            mrt[0] = temporary.colorBuffer;
-            mrt[1] = destinationToUse.colorBuffer;
-            Graphics.SetRenderTarget(mrt, destinationToUse.depthBuffer);
-
-            // Do the render
-            RenderFullScreenQuad();
-
-            // release the old history / update with new history
-            RenderTexture.ReleaseTemporary(m_History);
-            m_History = temporary;
-
-            // do the extra blit if needed
-            if (needsExtraBlit)
-            {
-                Graphics.Blit(destinationToUse, destination);
-                RenderTexture.ReleaseTemporary(destinationToUse);
-            }
-
-            RenderTexture.active = destination;
         }
     }
 }
