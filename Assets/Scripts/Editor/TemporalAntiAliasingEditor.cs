@@ -89,6 +89,19 @@ namespace UnityStandardAssets.CinematicEffects
 
         public override void OnInspectorGUI()
         {
+            var temporalAntiAliasing = target as TemporalAntiAliasing;
+
+            if (temporalAntiAliasing != null)
+            {
+                var camera = temporalAntiAliasing.GetComponent<Camera>();
+
+                if (camera != null && camera.orthographic)
+                {
+                    EditorGUILayout.HelpBox("This effect does not work with Orthographic camera, will not execute.", MessageType.Warning);
+                    return;
+                }
+            }
+
             serializedObject.Update();
 
             if (m_Properties.Count >= 1)

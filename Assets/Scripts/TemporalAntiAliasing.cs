@@ -348,6 +348,12 @@ namespace UnityStandardAssets.CinematicEffects
 #endif
         void OnPreCull()
         {
+            if (camera_.orthographic)
+            {
+                enabled = false;
+                return;
+            }
+
             Vector2 jitter = GenerateRandomOffset();
             jitter *= settings.jitterSettings.spread;
 
@@ -379,6 +385,9 @@ namespace UnityStandardAssets.CinematicEffects
                 m_IsFirstFrame = true;
             }
 
+            effectMaterial.SetVector("_SharpenParameters", new Vector4(settings.sharpenFilterSettings.amount, 0f, 0f, 0f));
+            effectMaterial.SetVector("_FinalBlendParameters", new Vector4(settings.blendSettings.stationary, settings.blendSettings.moving, 100f * settings.blendSettings.motionAmplification, 0f));
+
             camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, commandBuffer);
             commandBuffer.Clear();
 
@@ -403,9 +412,6 @@ namespace UnityStandardAssets.CinematicEffects
             commandBuffer.ReleaseTemporaryRT(kTemporaryTexture);
 
             camera_.AddCommandBuffer(CameraEvent.AfterImageEffectsOpaque, commandBuffer);
-
-            effectMaterial.SetVector("_SharpenParameters", new Vector4(settings.sharpenFilterSettings.amount, 0f, 0f, 0f));
-            effectMaterial.SetVector("_FinalBlendParameters", new Vector4(settings.blendSettings.stationary, settings.blendSettings.moving, 100f * settings.blendSettings.motionAmplification, 0f));
         }
 
         public void OnPostRender()
