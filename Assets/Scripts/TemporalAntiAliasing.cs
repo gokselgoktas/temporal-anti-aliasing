@@ -59,11 +59,8 @@ namespace UnityStandardAssets.CinematicEffects
         [Serializable]
         public struct DebugSettings
         {
-            [Tooltip("Automatically update the game view while application is not playing")]
-            public bool updateGameView;
-            [Tooltip("Controls the how frequently the game view will be updated")]
-            [Range(0.01f, 10f)]
-            public float frequency;
+            [Tooltip("Forces the game view to update automatically while not in play mode.")]
+            public bool forceRepaint;
         }
 
         [Serializable]
@@ -110,8 +107,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 debugSettings = new DebugSettings
                 {
-                    updateGameView = false,
-                    frequency = 0.1f
+                    forceRepaint = false
                 }
             };
 
@@ -248,6 +244,10 @@ namespace UnityStandardAssets.CinematicEffects
         private bool m_IsFirstFrame = true;
         private int m_SampleIndex = 0;
 
+#if UNITY_EDITOR
+        private double m_NextForceRepaintTime = 0;
+#endif
+
         private float GetHaltonValue(int index, int radix)
         {
             float result = 0.0f;
@@ -323,7 +323,7 @@ namespace UnityStandardAssets.CinematicEffects
 #endif
 
 #if UNITY_EDITOR
-            UnityEditor.EditorApplication.update = DebugUpdateGameView;
+            UnityEditor.EditorApplication.update = ForceRepaint;
 #endif
 
             camera_.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
@@ -444,19 +444,16 @@ namespace UnityStandardAssets.CinematicEffects
         }
 
 #if UNITY_EDITOR
-        private double debugTime;
-        private double debugNextUpdate;
-
-        private void DebugUpdateGameView()
+        private void ForceRepaint()
         {
-            if (settings.debugSettings.updateGameView && !UnityEditor.EditorApplication.isPlaying)
+            if (settings.debugSettings.forceRepaint && !UnityEditor.EditorApplication.isPlaying)
             {
-                debugTime = UnityEditor.EditorApplication.timeSinceStartup;
+                var time = UnityEditor.EditorApplication.timeSinceStartup;
 
-                if (debugTime > debugNextUpdate)
+                if (time > m_NextForceRepaintTime)
                 {
                     UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
-                    debugNextUpdate = debugTime + settings.debugSettings.frequency;
+                    m_NextForceRepaintTime = time + 0.033333;
                 }
             }
         }
