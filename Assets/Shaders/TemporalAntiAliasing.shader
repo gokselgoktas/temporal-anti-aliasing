@@ -333,7 +333,9 @@ Shader "Hidden/Temporal Anti-aliasing"
         luma = float2(Luminance(color.rgb), Luminance(history.rgb));
 
         float weight = 1. - abs(luma.x - luma.y) / max(luma.x, max(luma.y, .2));
-        color = lerp(color, history, lerp(.88, .97, weight * weight));
+        weight = lerp(TAA_FINAL_BLEND_DYNAMIC_FACTOR, TAA_FINAL_BLEND_STATIC_FACTOR, weight * weight);
+
+        color = lerp(color, history, weight);
     #elif TAA_FINAL_BLEND_METHOD == 2
         float weight = clamp(lerp(TAA_FINAL_BLEND_STATIC_FACTOR, TAA_FINAL_BLEND_DYNAMIC_FACTOR,
                 length(motion * TAA_MOTION_AMPLIFICATION)), TAA_FINAL_BLEND_DYNAMIC_FACTOR, TAA_FINAL_BLEND_STATIC_FACTOR);

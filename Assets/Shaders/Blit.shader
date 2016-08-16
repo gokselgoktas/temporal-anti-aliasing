@@ -29,7 +29,7 @@ Shader "Hidden/MRT Blit"
         Varyings output;
 
         output.vertex = input.vertex;
-        output.uv = .5 * input.vertex + .5;
+        output.uv = .5 * input.vertex.xy + .5;
 
         return output;
     }
