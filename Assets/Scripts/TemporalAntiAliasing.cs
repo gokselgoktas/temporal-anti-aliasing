@@ -57,6 +57,16 @@ namespace UnityStandardAssets.CinematicEffects
         }
 
         [Serializable]
+        public struct DebugSettings
+        {
+            [Tooltip("Automatically update the game view while application is not playing")]
+            public bool updateGameView;
+            [Tooltip("Controls the how frequently the game view will be updated")]
+            [Range(0.01f, 10f)]
+            public float frequency;
+        }
+
+        [Serializable]
         public class Settings
         {
             [AttributeUsage(AttributeTargets.Field)]
@@ -72,6 +82,9 @@ namespace UnityStandardAssets.CinematicEffects
 
             [Layout]
             public BlendSettings blendSettings;
+
+            [Layout]
+            public DebugSettings debugSettings;
 
             private static readonly Settings m_Default = new Settings
             {
@@ -93,6 +106,12 @@ namespace UnityStandardAssets.CinematicEffects
                     moving = 0.8f,
 
                     motionAmplification = 60f
+                },
+
+                debugSettings = new DebugSettings
+                {
+                    updateGameView = false,
+                    frequency = 0.1f
                 }
             };
 
@@ -302,6 +321,11 @@ namespace UnityStandardAssets.CinematicEffects
 #if !UNITY_5_4_OR_NEWER
             enabled = false;
 #endif
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.update = DebugUpdateGameView;
+#endif
+
             camera_.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
 
             m_IntermediateFormat = camera_.hdr ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
@@ -418,5 +442,24 @@ namespace UnityStandardAssets.CinematicEffects
         {
             camera_.ResetProjectionMatrix();
         }
+
+#if UNITY_EDITOR
+        private double debugTime;
+        private double debugNextUpdate;
+
+        private void DebugUpdateGameView()
+        {
+            if (settings.debugSettings.updateGameView && !UnityEditor.EditorApplication.isPlaying)
+            {
+                debugTime = UnityEditor.EditorApplication.timeSinceStartup;
+
+                if (debugTime > debugNextUpdate)
+                {
+                    UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+                    debugNextUpdate = debugTime + settings.debugSettings.frequency;
+                }
+            }
+        }
+#endif
     }
 }
