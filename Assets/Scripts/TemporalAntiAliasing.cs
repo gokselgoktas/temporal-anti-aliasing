@@ -32,32 +32,61 @@ namespace UnityStandardAssets.CinematicEffects
         [Range(3000f, 10000f)]
         public float motionAmplificationAmount = 6000f;
 
-        private Shader m_Shader;
-        public Shader shader
+        private Shader m_EffectShader;
+        public Shader effectShader
         {
             get
             {
-                if (m_Shader == null)
-                    m_Shader = Shader.Find("Hidden/Temporal Anti-aliasing");
+                if (m_EffectShader == null)
+                    m_EffectShader = Shader.Find("Hidden/Temporal Anti-aliasing");
 
-                return m_Shader;
+                return m_EffectShader;
             }
         }
 
-        private Material m_Material;
-        public Material material
+        private Material m_EffectMaterial;
+        public Material effectMaterial
         {
             get
             {
-                if (m_Material == null)
+                if (m_EffectMaterial == null)
                 {
-                    if (shader == null || !shader.isSupported)
+                    if (effectShader == null || !effectShader.isSupported)
                         return null;
 
-                    m_Material = new Material(shader);
+                    m_EffectMaterial = new Material(effectShader);
                 }
 
-                return m_Material;
+                return m_EffectMaterial;
+            }
+        }
+
+        private Shader m_BlitShader;
+        private Shader blitShader
+        {
+            get
+            {
+                if (m_BlitShader == null)
+                    m_BlitShader = Shader.Find("Hidden/MRT Blit");
+
+                return m_BlitShader;
+            }
+        }
+
+        private Material m_BlitMaterial;
+        private Material blitMaterial
+        {
+            get
+            {
+                if (m_BlitMaterial == null)
+                {
+                    if (blitShader == null || !blitShader.isSupported)
+                        return null;
+
+                    m_BlitMaterial = new Material(blitShader);
+                }
+
+                return m_BlitMaterial;
             }
         }
 
@@ -290,7 +319,7 @@ namespace UnityStandardAssets.CinematicEffects
             jitter.x /= camera_.pixelWidth;
             jitter.y /= camera_.pixelHeight;
 
-            material.SetVector("_Jitter", jitter);
+            effectMaterial.SetVector("_Jitter", jitter);
         }
 
         void OnPreRender()
@@ -307,21 +336,21 @@ namespace UnityStandardAssets.CinematicEffects
             commandBuffer.GetTemporaryRT(kTemporaryTexture, camera_.pixelWidth, camera_.pixelHeight, 0, FilterMode.Bilinear, m_IntermediateFormat);
 
             commandBuffer.SetGlobalTexture("_HistoryTex", m_HistoryIdentifier);
-            commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, kTemporaryTexture, material, 0);
+            commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, kTemporaryTexture, effectMaterial, 0);
 
             var renderTargets = new RenderTargetIdentifier[2];
             renderTargets[0] = BuiltinRenderTextureType.CameraTarget;
             renderTargets[1] = m_HistoryIdentifier;
 
             commandBuffer.SetRenderTarget(renderTargets, BuiltinRenderTextureType.CameraTarget);
-            commandBuffer.DrawMesh(quad, Matrix4x4.identity, material, 0, 1);
+            commandBuffer.DrawMesh(quad, Matrix4x4.identity, blitMaterial, 0, 0);
 
             commandBuffer.ReleaseTemporaryRT(kTemporaryTexture);
 
             camera_.AddCommandBuffer(CameraEvent.AfterImageEffectsOpaque, commandBuffer);
 
-            material.SetVector("_SharpenParameters", new Vector4(sharpeningAmount, sharpenFilterWidth, 0f, 0f));
-            material.SetVector("_FinalBlendParameters", new Vector4(staticBlurAmount, motionBlurAmount, motionAmplificationAmount));
+            effectMaterial.SetVector("_SharpenParameters", new Vector4(sharpeningAmount, sharpenFilterWidth, 0f, 0f));
+            effectMaterial.SetVector("_FinalBlendParameters", new Vector4(staticBlurAmount, motionBlurAmount, motionAmplificationAmount));
         }
 
         public void OnPostRender()
