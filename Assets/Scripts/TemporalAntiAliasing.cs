@@ -418,5 +418,11 @@ namespace UnityStandardAssets.CinematicEffects
         {
             camera_.ResetProjectionMatrix();
         }
+
+        [ImageEffectOpaque]
+        void OnRenderImage(RenderTexture source, RenderTexture destination)
+        {
+            Graphics.Blit(source, destination);
+        }
     }
 }
