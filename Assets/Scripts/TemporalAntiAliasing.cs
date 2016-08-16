@@ -306,12 +306,6 @@ namespace UnityStandardAssets.CinematicEffects
 
             m_IntermediateFormat = camera_.hdr ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
 
-            m_History = RenderTexture.GetTemporary(camera_.pixelWidth, camera_.pixelHeight, 0, m_IntermediateFormat, RenderTextureReadWrite.Default);
-            m_History.hideFlags = HideFlags.HideAndDontSave;
-            m_History.filterMode = FilterMode.Bilinear;
-
-            m_HistoryIdentifier = new RenderTargetIdentifier(m_History);
-
             kTemporaryTexture = Shader.PropertyToID("_BlitSourceTex");
 
             m_IsFirstFrame = true;
@@ -370,6 +364,21 @@ namespace UnityStandardAssets.CinematicEffects
 
         void OnPreRender()
         {
+            if (m_History == null || (m_History.width != camera_.pixelWidth || m_History.height != camera_.pixelHeight))
+            {
+                if (m_History)
+                    RenderTexture.ReleaseTemporary(m_History);
+
+                m_History = RenderTexture.GetTemporary(camera_.pixelWidth, camera_.pixelHeight, 0, m_IntermediateFormat, RenderTextureReadWrite.Default);
+                m_History.filterMode = FilterMode.Bilinear;
+
+                m_History.hideFlags = HideFlags.HideAndDontSave;
+
+                m_HistoryIdentifier = new RenderTargetIdentifier(m_History);
+
+                m_IsFirstFrame = true;
+            }
+
             camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffectsOpaque, commandBuffer);
             commandBuffer.Clear();
 
