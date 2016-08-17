@@ -323,7 +323,7 @@ namespace UnityStandardAssets.CinematicEffects
 #endif
 
 #if UNITY_EDITOR
-            UnityEditor.EditorApplication.update = ForceRepaint;
+            UnityEditor.EditorApplication.update += ForceRepaint;
 #endif
 
             camera_.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
