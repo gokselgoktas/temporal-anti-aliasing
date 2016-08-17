@@ -18,33 +18,43 @@ namespace UnityStandardAssets.CinematicEffects
         [CustomPropertyDrawer(typeof(TemporalAntiAliasing.Settings.LayoutAttribute))]
         public class LayoutDrawer : PropertyDrawer
         {
-            private bool GenerateHeader(Rect position, String title, bool display)
+            private bool GenerateHeader(Rect position, String title, bool display, GUIStyle style)
             {
-                Rect area = position;
                 position.height = EditorGUIUtility.singleLineHeight;
 
-                GUIStyle style = "ShurikenModuleTitle";
-                style.font = (new GUIStyle("Label")).font;
-                style.border = new RectOffset(15, 7, 4, 4);
-                style.fixedHeight = 22f;
-                style.contentOffset = new Vector2(20f, -2f);
+                GUI.Box(position, title, style);
 
-                GUI.Box(area, title, style);
-
-                Rect toggleArea = new Rect(area.x + 4f, area.y + 2f, 13f, 13f);
+                Rect toggleArea = new Rect(position.x + 4f, position.y + 2f, 13f, 13f);
 
                 if (Event.current.type == EventType.Repaint)
                     EditorStyles.foldout.Draw(toggleArea, false, false, display, false);
 
                 Event e = Event.current;
 
-                if (e.type == EventType.MouseDown && area.Contains(e.mousePosition))
+                if (e.type == EventType.MouseDown && position.Contains(e.mousePosition))
                 {
                     display = !display;
                     e.Use();
                 }
 
                 return display;
+            }
+
+            protected void DrawProperty(Rect position, SerializedProperty property, GUIContent label, GUIStyle style)
+            {
+                position.height = EditorGUIUtility.singleLineHeight;
+                property.isExpanded = GenerateHeader(position, property.displayName, property.isExpanded, style);
+
+                position.y += 22f;
+
+                if (!property.isExpanded)
+                    return;
+
+                foreach (SerializedProperty child in property)
+                {
+                    EditorGUI.PropertyField(position, child);
+                    position.y += EditorGUIUtility.singleLineHeight;
+                }
             }
 
             public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -58,19 +68,33 @@ namespace UnityStandardAssets.CinematicEffects
 
             public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
             {
-                position.height = EditorGUIUtility.singleLineHeight;
-                property.isExpanded = GenerateHeader(position, property.displayName, property.isExpanded);
+                GUIStyle style = "ShurikenModuleTitle";
+                style.font = (new GUIStyle("Label")).font;
+                style.fontSize = (new GUIStyle("Label")).fontSize;
+                style.border = new RectOffset(15, 7, 4, 4);
+                style.fixedHeight = 22f;
+                style.contentOffset = new Vector2(20f, -2f);
 
-                position.y += 22f;
+                DrawProperty(position, property, label, style);
+            }
+        }
 
-                if (!property.isExpanded)
-                    return;
+        [CustomPropertyDrawer(typeof(TemporalAntiAliasing.Settings.AuxiliaryLayoutAttribute))]
+        public class AuxiliaryLayoutDrawer : LayoutDrawer
+        {
+            public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+            {
+                GUIStyle style = "ShurikenModuleTitle";
+                style.font = (new GUIStyle("Label")).font;
+                style.fontSize = (new GUIStyle("Label")).fontSize;
+                style.border = new RectOffset(15, 7, 4, 4);
+                style.fixedHeight = 22f;
+                style.contentOffset = new Vector2(20f, -2f);
 
-                foreach (SerializedProperty child in property)
-                {
-                    EditorGUI.PropertyField(position, child);
-                    position.y += EditorGUIUtility.singleLineHeight;
-                }
+                GUI.Box(position, (Texture) null);
+                DrawProperty(position, property, label, style);
+
+                GUI.backgroundColor = Color.white;
             }
         }
 

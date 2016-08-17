@@ -71,6 +71,11 @@ namespace UnityStandardAssets.CinematicEffects
             {
             }
 
+            [AttributeUsage(AttributeTargets.Field)]
+            public class AuxiliaryLayoutAttribute : LayoutAttribute
+            {
+            }
+
             [Layout]
             public JitterSettings jitterSettings;
 
@@ -80,7 +85,7 @@ namespace UnityStandardAssets.CinematicEffects
             [Layout]
             public BlendSettings blendSettings;
 
-            [Layout]
+            [AuxiliaryLayout]
             public DebugSettings debugSettings;
 
             private static readonly Settings m_Default = new Settings
