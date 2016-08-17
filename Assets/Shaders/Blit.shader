@@ -23,13 +23,21 @@ Shader "Hidden/MRT Blit"
     };
 
     sampler2D _BlitSourceTex;
+    float4 _BlitSourceTex_TexelSize;
 
     Varyings vertex(in Input input)
     {
         Varyings output;
 
         output.vertex = input.vertex;
-        output.uv = .5 * input.vertex.xy + .5;
+
+        float2 uv = .5 * input.vertex.xy + .5;
+        output.uv = uv;
+
+    #if UNITY_UV_STARTS_AT_TOP
+        if (_BlitSourceTex_TexelSize.y < 0.)
+            output.uv.y = 1. - uv.y;
+    #endif
 
         return output;
     }

@@ -57,6 +57,13 @@ namespace UnityStandardAssets.CinematicEffects
         }
 
         [Serializable]
+        public struct DebugSettings
+        {
+            [Tooltip("Forces the game view to update automatically while not in play mode.")]
+            public bool forceRepaint;
+        }
+
+        [Serializable]
         public class Settings
         {
             [AttributeUsage(AttributeTargets.Field)]
@@ -72,6 +79,9 @@ namespace UnityStandardAssets.CinematicEffects
 
             [Layout]
             public BlendSettings blendSettings;
+
+            [Layout]
+            public DebugSettings debugSettings;
 
             private static readonly Settings m_Default = new Settings
             {
@@ -93,6 +103,11 @@ namespace UnityStandardAssets.CinematicEffects
                     moving = 0.8f,
 
                     motionAmplification = 60f
+                },
+
+                debugSettings = new DebugSettings
+                {
+                    forceRepaint = false
                 }
             };
 
@@ -229,6 +244,10 @@ namespace UnityStandardAssets.CinematicEffects
         private bool m_IsFirstFrame = true;
         private int m_SampleIndex = 0;
 
+#if UNITY_EDITOR
+        private double m_NextForceRepaintTime = 0;
+#endif
+
         private float GetHaltonValue(int index, int radix)
         {
             float result = 0.0f;
@@ -302,6 +321,11 @@ namespace UnityStandardAssets.CinematicEffects
 #if !UNITY_5_4_OR_NEWER
             enabled = false;
 #endif
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.update += ForceRepaint;
+#endif
+
             camera_.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
 
             m_IntermediateFormat = camera_.hdr ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
@@ -424,5 +448,21 @@ namespace UnityStandardAssets.CinematicEffects
         {
             Graphics.Blit(source, destination);
         }
+
+#if UNITY_EDITOR
+        private void ForceRepaint()
+        {
+            if (settings.debugSettings.forceRepaint && !UnityEditor.EditorApplication.isPlaying)
+            {
+                var time = UnityEditor.EditorApplication.timeSinceStartup;
+
+                if (time > m_NextForceRepaintTime)
+                {
+                    UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+                    m_NextForceRepaintTime = time + 0.033333;
+                }
+            }
+        }
+#endif
     }
 }
