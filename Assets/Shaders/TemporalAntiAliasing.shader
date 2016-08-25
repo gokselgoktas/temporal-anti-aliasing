@@ -301,7 +301,7 @@ Shader "Hidden/Temporal Anti-aliasing"
             color = map(color);
         #endif
 
-        float nudge = 2. * length(average - color);
+        float nudge = length(average - color);
         float2 luma = float2(Luminance(topLeft.rgb), Luminance(bottomRight.rgb));
 
         float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y)) - nudge;
