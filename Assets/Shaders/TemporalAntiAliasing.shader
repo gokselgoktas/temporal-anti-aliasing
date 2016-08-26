@@ -11,6 +11,8 @@ Shader "Hidden/Temporal Anti-aliasing"
 
     #include "UnityCG.cginc"
 
+    #define TAA_USE_GATHER4_FOR_DEPTH_SAMPLE (SHADER_TARGET >= 41)
+
     #define TAA_REMOVE_COLOR_SAMPLE_JITTER 1
 
     #define TAA_USE_EXPERIMENTAL_OPTIMIZATIONS 1
@@ -23,8 +25,6 @@ Shader "Hidden/Temporal Anti-aliasing"
     #define TAA_DILATE_MOTION_VECTOR_SAMPLE 1
 
     #define TAA_CLIP_HISTORY_SAMPLE 1
-
-    #define TAA_DEPTH_SAMPLE_SPREAD 1.
 
     #define TAA_SHARPEN_OUTPUT 1
     #define TAA_FINAL_BLEND_METHOD 2
@@ -59,7 +59,13 @@ Shader "Hidden/Temporal Anti-aliasing"
     sampler2D _HistoryTex;
 
     sampler2D _CameraMotionVectorsTexture;
-    sampler2D _CameraDepthTexture;
+
+    #if TAA_USE_GATHER4_FOR_DEPTH_SAMPLE
+        Texture2D _CameraDepthTexture;
+        SamplerState sampler_CameraDepthTexture;
+    #else
+        sampler2D _CameraDepthTexture;
+    #endif
 
     float4 _MainTex_TexelSize;
     float4 _HistoryTex_TexelSize;
@@ -123,15 +129,20 @@ Shader "Hidden/Temporal Anti-aliasing"
 
     float2 getClosestFragment(in float2 uv)
     {
-        const float2 k = TAA_DEPTH_SAMPLE_SPREAD * _CameraDepthTexture_TexelSize.xy;
+        const float2 k = _CameraDepthTexture_TexelSize.xy;
 
-        const float4 neighborhood = float4(
-            tex2D(_CameraDepthTexture, uv - k).r,
-            tex2D(_CameraDepthTexture, uv + float2(k.x, -k.y)).r,
-            tex2D(_CameraDepthTexture, uv + float2(-k.x, k.y)).r,
-            tex2D(_CameraDepthTexture, uv + k).r);
-
-        float3 result = float3(0., 0., tex2D(_CameraDepthTexture, uv).r);
+        #if TAA_USE_GATHER4_FOR_DEPTH_SAMPLE
+            const float4 neighborhood = _CameraDepthTexture.Gather(sampler_CameraDepthTexture, uv, int2(1, 1));
+            float3 result = float3(0., 0., _CameraDepthTexture.Sample(sampler_CameraDepthTexture, uv).r);
+        #else
+            const float4 neighborhood = float4(
+                tex2D(_CameraDepthTexture, uv - k).r,
+                tex2D(_CameraDepthTexture, uv + float2(k.x, -k.y)).r,
+                tex2D(_CameraDepthTexture, uv + float2(-k.x, k.y)).r,
+                tex2D(_CameraDepthTexture, uv + k).r
+            );
+            float3 result = float3(0., 0., tex2D(_CameraDepthTexture, uv).r);
+        #endif
 
         #if TAA_USE_EXPERIMENTAL_OPTIMIZATIONS
             result = lerp(result, float3(-1., -1., neighborhood.x), step(neighborhood.x, result.z));
