@@ -164,11 +164,11 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        private void RenderFullScreenQuad()
+        private void RenderFullScreenQuad(int pass)
         {
             GL.PushMatrix();
             GL.LoadOrtho();
-            material.SetPass(0);
+            material.SetPass(pass);
 
             //Render the full screen quad manually.
             GL.Begin(GL.QUADS);
@@ -257,6 +257,22 @@ namespace UnityStandardAssets.CinematicEffects
             return matrix;
         }
 
+        private Matrix4x4 GetOrthographicProjectionMatrix(Vector2 offset)
+        {
+            float vertical = camera_.orthographicSize;
+            float horizontal = vertical * camera_.aspect;
+
+            offset.x *= horizontal / (0.5f * camera_.pixelWidth);
+            offset.y *= vertical / (0.5f * camera_.pixelHeight);
+
+            float left = offset.x - horizontal;
+            float right = offset.x + horizontal;
+            float top = offset.y + vertical;
+            float bottom = offset.y - vertical;
+
+            return Matrix4x4.Ortho(left, right, bottom, top, camera_.nearClipPlane, camera_.farClipPlane);
+        }
+
         void OnEnable()
         {
 #if !UNITY_5_4_OR_NEWER
@@ -290,7 +306,10 @@ namespace UnityStandardAssets.CinematicEffects
 #if UNITY_5_4_OR_NEWER
             camera_.nonJitteredProjectionMatrix = camera_.projectionMatrix;
 #endif
-            camera_.projectionMatrix = GetPerspectiveProjectionMatrix(jitter);
+
+            camera_.projectionMatrix = camera_.orthographic
+                ? GetOrthographicProjectionMatrix(jitter)
+                : GetPerspectiveProjectionMatrix(jitter);
 
             jitter.x /= camera_.pixelWidth;
             jitter.y /= camera_.pixelHeight;
@@ -301,12 +320,7 @@ namespace UnityStandardAssets.CinematicEffects
         [ImageEffectOpaque]
         void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            if (camera_.orthographic)
-            {
-                Graphics.Blit(source, destination);
-                return;
-            }
-            else if (m_History == null || (m_History.width != source.width || m_History.height != source.height))
+            if (m_History == null || (m_History.width != source.width || m_History.height != source.height))
             {
                 if (m_History)
                     RenderTexture.ReleaseTemporary(m_History);
@@ -344,7 +358,7 @@ namespace UnityStandardAssets.CinematicEffects
             renderTargets[1] = temporary.colorBuffer;
 
             Graphics.SetRenderTarget(renderTargets, effectDestination.depthBuffer);
-            RenderFullScreenQuad();
+            RenderFullScreenQuad(camera_.orthographic ? 1 : 0);
 
             RenderTexture.ReleaseTemporary(m_History);
             m_History = temporary;
