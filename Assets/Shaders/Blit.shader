@@ -1,9 +1,5 @@
 Shader "Hidden/MRT Blit"
 {
-    Properties
-    {
-    }
-
     CGINCLUDE
     struct Input
     {
@@ -35,7 +31,7 @@ Shader "Hidden/MRT Blit"
         output.uv = uv;
 
     #if UNITY_UV_STARTS_AT_TOP
-        if (_BlitSourceTex_TexelSize.y < 0.)
+        //if (_BlitSourceTex_TexelSize.y < 0.)
             output.uv.y = 1. - uv.y;
     #endif
 

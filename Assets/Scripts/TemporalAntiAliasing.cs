@@ -388,12 +388,6 @@ namespace UnityStandardAssets.CinematicEffects
 #endif
         void OnPreCull()
         {
-            if (camera_.orthographic)
-            {
-                enabled = false;
-                return;
-            }
-
             Vector2 jitter = GenerateRandomOffset();
             jitter *= settings.jitterSettings.spread;
 
@@ -436,6 +430,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (m_IsFirstFrame)
             {
+                commandBuffer.SetGlobalTexture("_MainTex", BuiltinRenderTextureType.CameraTarget);
                 commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, m_HistoryIdentifier);
                 m_IsFirstFrame = false;
             }
@@ -443,7 +438,8 @@ namespace UnityStandardAssets.CinematicEffects
             commandBuffer.GetTemporaryRT(kTemporaryTexture, camera_.pixelWidth, camera_.pixelHeight, 0, FilterMode.Bilinear, m_IntermediateFormat);
 
             commandBuffer.SetGlobalTexture("_HistoryTex", m_HistoryIdentifier);
-            commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, kTemporaryTexture, effectMaterial, 0);
+            commandBuffer.SetGlobalTexture("_MainTex", BuiltinRenderTextureType.CameraTarget);
+            commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, kTemporaryTexture, effectMaterial, camera_.orthographic ? 1 : 0);
 
             var renderTargets = new RenderTargetIdentifier[2];
             renderTargets[0] = BuiltinRenderTextureType.CameraTarget;
