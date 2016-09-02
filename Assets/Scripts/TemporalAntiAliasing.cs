@@ -316,6 +316,22 @@ namespace UnityStandardAssets.CinematicEffects
             return matrix;
         }
 
+        private Matrix4x4 GetOrthographicProjectionMatrix(Vector2 offset)
+        {
+            float vertical = camera_.orthographicSize;
+            float horizontal = vertical * camera_.aspect;
+
+            offset.x *= horizontal / (0.5f * camera_.pixelWidth);
+            offset.y *= vertical / (0.5f * camera_.pixelHeight);
+
+            float left = offset.x - horizontal;
+            float right = offset.x + horizontal;
+            float top = offset.y + vertical;
+            float bottom = offset.y - vertical;
+
+            return Matrix4x4.Ortho(left, right, bottom, top, camera_.nearClipPlane, camera_.farClipPlane);
+        }
+
         void OnEnable()
         {
 #if !UNITY_5_4_OR_NEWER
@@ -384,7 +400,10 @@ namespace UnityStandardAssets.CinematicEffects
 #if UNITY_5_4_OR_NEWER
             camera_.nonJitteredProjectionMatrix = camera_.projectionMatrix;
 #endif
-            camera_.projectionMatrix = GetPerspectiveProjectionMatrix(jitter);
+
+            camera_.projectionMatrix = camera_.orthographic
+                ? GetOrthographicProjectionMatrix(jitter)
+                : GetPerspectiveProjectionMatrix(jitter);
 
             jitter.x /= camera_.pixelWidth;
             jitter.y /= camera_.pixelHeight;
