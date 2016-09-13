@@ -312,8 +312,8 @@ Output fragment(Varyings input)
         color = map(color);
     #endif
 
-    float nudge = length(average - color);
-    float2 luma = float2(Luminance(topLeft.rgb), Luminance(bottomRight.rgb));
+    float4 luma = float4(Luminance(topLeft.rgb), Luminance(bottomRight.rgb), Luminance(average.rgb), Luminance(color.rgb));
+    float nudge = 5. * max(abs(luma.z - luma.w), abs(luma.x - luma.y));
 
     float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y)) - nudge;
     float4 maximum = lerp(topLeft, bottomRight, step(luma.x, luma.y)) + nudge;
@@ -341,7 +341,7 @@ Output fragment(Varyings input)
         float2
     #endif
 
-    luma = float2(Luminance(color.rgb), Luminance(history.rgb));
+    luma.xy = float2(Luminance(color.rgb), Luminance(history.rgb));
 
     float weight = 1. - abs(luma.x - luma.y) / max(luma.x, max(luma.y, .2));
     weight = lerp(TAA_FINAL_BLEND_DYNAMIC_FACTOR, TAA_FINAL_BLEND_STATIC_FACTOR, weight * weight);
