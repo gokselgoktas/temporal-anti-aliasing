@@ -89,7 +89,7 @@ namespace UnityStandardAssets.CinematicEffects
                 {
                     return new Settings
                     {
-                    	jitterSettings = new JitterSettings
+                    		jitterSettings = new JitterSettings
 		                {
 		                    sequence = Sequence.Halton,
 		                    spread = 1f,
