@@ -83,39 +83,37 @@ namespace UnityStandardAssets.CinematicEffects
             [Layout]
             public DebugSettings debugSettings;
 
-            private static readonly Settings m_Default = new Settings
-            {
-                jitterSettings = new JitterSettings
-                {
-                    sequence = Sequence.Halton,
-                    spread = 1f,
-                    sampleCount = 8
-                },
-
-                sharpenFilterSettings = new SharpenFilterSettings
-                {
-                    amount = 0.25f
-                },
-
-                blendSettings = new BlendSettings
-                {
-                    stationary = 0.98f,
-                    moving = 0.8f,
-
-                    motionAmplification = 60f
-                },
-
-                debugSettings = new DebugSettings
-                {
-                    forceRepaint = false
-                }
-            };
-
             public static Settings defaultSettings
             {
                 get
                 {
-                    return m_Default;
+                    return new Settings
+                    {
+                    	jitterSettings = new JitterSettings
+		                {
+		                    sequence = Sequence.Halton,
+		                    spread = 1f,
+		                    sampleCount = 8
+		                },
+
+		                sharpenFilterSettings = new SharpenFilterSettings
+		                {
+		                    amount = 0.25f
+		                },
+
+		                blendSettings = new BlendSettings
+		                {
+		                    stationary = 0.98f,
+		                    moving = 0.8f,
+
+		                    motionAmplification = 60f
+		                },
+
+		                debugSettings = new DebugSettings
+		                {
+		                    forceRepaint = false
+		                }
+                    };
                 }
             }
         }
