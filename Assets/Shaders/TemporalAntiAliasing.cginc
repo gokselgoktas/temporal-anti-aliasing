@@ -20,6 +20,9 @@
 
 #define TAA_CLIP_HISTORY_SAMPLE 1
 
+#define TAA_STORE_FRAGMENT_MOTION_HISTORY 1
+#define TAA_FRAGMENT_MOTION_HISTORY_DECAY .85
+
 #define TAA_SHARPEN_OUTPUT 1
 #define TAA_FINAL_BLEND_METHOD 2
 
@@ -90,6 +93,11 @@ Varyings vertex(Input input)
 #endif
 
     return output;
+}
+
+float4 blit(in Varyings input) : SV_Target
+{
+    return float4(tex2D(_MainTex, input.uv).rgb, 0.);
 }
 
 #if (SHADER_TARGET < 50 && !defined (SHADER_API_PSSL))
@@ -313,23 +321,29 @@ Output fragment(Varyings input)
     #endif
 
     float4 luma = float4(Luminance(topLeft.rgb), Luminance(bottomRight.rgb), Luminance(average.rgb), Luminance(color.rgb));
-    float nudge = 5. * max(abs(luma.z - luma.w), abs(luma.x - luma.y));
+#endif
+
+    float4 history = tex2D(_HistoryTex, input.uv.zw - motion);
+
+#if TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN == 2
+    float nudge = lerp(6.28318530718, .5, saturate(2. * history.a)) * max(abs(luma.z - luma.w), abs(luma.x - luma.y));
 
     float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y)) - nudge;
     float4 maximum = lerp(topLeft, bottomRight, step(luma.x, luma.y)) + nudge;
 #endif
-
-    float4 history = tex2D(_HistoryTex, input.uv.zw - motion);
 
 #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
     history = map(history);
 #endif
 
 #if TAA_CLIP_HISTORY_SAMPLE
-    // History clipping causes artifacts
-    history = clipToAABB(history, average.w, minimum.xyz, maximum.xyz);
+    history = clipToAABB(history, history.a, minimum.xyz, maximum.xyz);
 #else
     history = clamp(history, minimum, maximum);
+#endif
+
+#if TAA_STORE_FRAGMENT_MOTION_HISTORY
+    color.a = saturate(smoothstep(.2 * _MainTex_TexelSize.z, .35 * _MainTex_TexelSize.z, length(motion)));
 #endif
 
 #if TAA_FINAL_BLEND_METHOD == 0
@@ -349,7 +363,7 @@ Output fragment(Varyings input)
     color = lerp(color, history, weight);
 #elif TAA_FINAL_BLEND_METHOD == 2
     float weight = clamp(lerp(TAA_FINAL_BLEND_STATIC_FACTOR, TAA_FINAL_BLEND_DYNAMIC_FACTOR,
-            length(motion * TAA_MOTION_AMPLIFICATION)), TAA_FINAL_BLEND_DYNAMIC_FACTOR, TAA_FINAL_BLEND_STATIC_FACTOR);
+            length(motion) * TAA_MOTION_AMPLIFICATION), TAA_FINAL_BLEND_DYNAMIC_FACTOR, TAA_FINAL_BLEND_STATIC_FACTOR);
 
     color = lerp(color, history, weight);
 #endif
@@ -361,6 +375,11 @@ Output fragment(Varyings input)
     Output output;
 
     output.first = color;
+
+#if TAA_STORE_FRAGMENT_MOTION_HISTORY
+    color.a *= TAA_FRAGMENT_MOTION_HISTORY_DECAY;
+#endif
+
     output.second = color;
 
     return output;

@@ -31,6 +31,16 @@ Shader "Hidden/Temporal Anti-aliasing"
                 #include "TemporalAntiAliasing.cginc"
             ENDCG
         }
+
+        Pass
+        {
+            CGPROGRAM
+                #pragma target 3.0
+                #pragma vertex vertex
+                #pragma fragment blit
+                #include "TemporalAntiAliasing.cginc"
+            ENDCG
+        }
     }
 
     SubShader
@@ -57,6 +67,16 @@ Shader "Hidden/Temporal Anti-aliasing"
                 #pragma fragment fragment
                 #define TAA_DILATE_MOTION_VECTOR_SAMPLE 0
                 #include "TemporalAntiAliasing.cginc"
+            ENDCG
+        }
+
+        Pass
+        {
+            CGPROGRAM
+            #pragma target 3.0
+            #pragma vertex vertex
+            #pragma fragment blit
+            #include "TemporalAntiAliasing.cginc"
             ENDCG
         }
     }

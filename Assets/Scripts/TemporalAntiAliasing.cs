@@ -330,7 +330,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 m_History.hideFlags = HideFlags.HideAndDontSave;
 
-                Graphics.Blit(source, m_History);
+                Graphics.Blit(source, m_History, material, 2);
             }
 
             material.SetVector("_SharpenParameters", new Vector4(settings.sharpenFilterSettings.amount, 0f, 0f, 0f));
