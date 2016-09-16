@@ -13,10 +13,10 @@ Shader "Hidden/Temporal Anti-aliasing"
         Pass
         {
             CGPROGRAM
-                #pragma target 5.0
-                #pragma vertex vertex
-                #pragma fragment fragment
-                #include "TemporalAntiAliasing.cginc"
+            #pragma target 5.0
+            #pragma vertex vertex
+            #pragma fragment fragment
+            #include "TemporalAntiAliasing.cginc"
             ENDCG
         }
 
@@ -24,21 +24,21 @@ Shader "Hidden/Temporal Anti-aliasing"
         Pass
         {
             CGPROGRAM
-                #pragma target 5.0
-                #pragma vertex vertex
-                #pragma fragment fragment
-                #define TAA_DILATE_MOTION_VECTOR_SAMPLE 0
-                #include "TemporalAntiAliasing.cginc"
+            #pragma target 5.0
+            #pragma vertex vertex
+            #pragma fragment fragment
+            #define TAA_DILATE_MOTION_VECTOR_SAMPLE 0
+            #include "TemporalAntiAliasing.cginc"
             ENDCG
         }
 
         Pass
         {
             CGPROGRAM
-                #pragma target 3.0
-                #pragma vertex vertex
-                #pragma fragment blit
-                #include "TemporalAntiAliasing.cginc"
+            #pragma target 3.0
+            #pragma vertex vertex
+            #pragma fragment blit
+            #include "TemporalAntiAliasing.cginc"
             ENDCG
         }
     }
@@ -51,10 +51,10 @@ Shader "Hidden/Temporal Anti-aliasing"
         Pass
         {
             CGPROGRAM
-                #pragma target 3.0
-                #pragma vertex vertex
-                #pragma fragment fragment
-                #include "TemporalAntiAliasing.cginc"
+            #pragma target 3.0
+            #pragma vertex vertex
+            #pragma fragment fragment
+            #include "TemporalAntiAliasing.cginc"
             ENDCG
         }
 
@@ -62,11 +62,11 @@ Shader "Hidden/Temporal Anti-aliasing"
         Pass
         {
             CGPROGRAM
-                #pragma target 3.0
-                #pragma vertex vertex
-                #pragma fragment fragment
-                #define TAA_DILATE_MOTION_VECTOR_SAMPLE 0
-                #include "TemporalAntiAliasing.cginc"
+            #pragma target 3.0
+            #pragma vertex vertex
+            #pragma fragment fragment
+            #define TAA_DILATE_MOTION_VECTOR_SAMPLE 0
+            #include "TemporalAntiAliasing.cginc"
             ENDCG
         }
 
