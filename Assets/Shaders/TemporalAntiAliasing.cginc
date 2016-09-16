@@ -21,7 +21,7 @@
 #define TAA_CLIP_HISTORY_SAMPLE 1
 
 #define TAA_STORE_FRAGMENT_MOTION_HISTORY 1
-#define TAA_FRAGMENT_MOTION_HISTORY_DECAY .85
+#define TAA_FRAGMENT_MOTION_HISTORY_DECAY .95
 
 #define TAA_SHARPEN_OUTPUT 1
 #define TAA_FINAL_BLEND_METHOD 2
@@ -343,7 +343,7 @@ Output fragment(Varyings input)
 #endif
 
 #if TAA_STORE_FRAGMENT_MOTION_HISTORY
-    color.a = saturate(smoothstep(.2 * _MainTex_TexelSize.z, .35 * _MainTex_TexelSize.z, length(motion)));
+    color.a = saturate(smoothstep(.002 * _MainTex_TexelSize.z, .0035 * _MainTex_TexelSize.z, length(motion * TAA_MOTION_AMPLIFICATION)));
 #endif
 
 #if TAA_FINAL_BLEND_METHOD == 0
