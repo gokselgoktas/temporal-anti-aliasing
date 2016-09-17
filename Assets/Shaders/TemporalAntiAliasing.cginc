@@ -23,11 +23,16 @@
 #define TAA_STORE_FRAGMENT_MOTION_HISTORY 1
 #define TAA_FRAGMENT_MOTION_HISTORY_DECAY .95
 
+#define TAA_MINIMUM_MOTION_NUDGE 6.28318530718
+#define TAA_MINIMUM_MOTION_SENSITIVITY .05
+#define TAA_MAXIMUM_MOTION_NUDGE .5
+#define TAA_MAXIMUM_MOTION_SENSITIVITY .055
+
 #define TAA_SHARPEN_OUTPUT 1
 #define TAA_FINAL_BLEND_METHOD 2
 
 #if TAA_FINAL_BLEND_METHOD == 0
-    #define TAA_FINAL_BLEND_FACTOR .97
+    #define TAA_FINAL_BLEND_FACTOR _FinalBlendParameters.x
 #elif TAA_FINAL_BLEND_METHOD == 2
     #define TAA_FINAL_BLEND_STATIC_FACTOR _FinalBlendParameters.x
     #define TAA_FINAL_BLEND_DYNAMIC_FACTOR _FinalBlendParameters.y
@@ -326,7 +331,8 @@ Output fragment(Varyings input)
     float4 history = tex2D(_HistoryTex, input.uv.zw - motion);
 
 #if TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN == 2
-    float nudge = lerp(6.28318530718, .5, saturate(2. * history.a)) * max(abs(luma.z - luma.w), abs(luma.x - luma.y));
+    float sensitivity = saturate(smoothstep(TAA_MINIMUM_MOTION_SENSITIVITY * _MainTex_TexelSize.z, TAA_MAXIMUM_MOTION_SENSITIVITY * _MainTex_TexelSize.z, history.a));
+    float nudge = lerp(TAA_MINIMUM_MOTION_NUDGE, TAA_MAXIMUM_MOTION_NUDGE, sensitivity) * max(abs(luma.z - luma.w), abs(luma.x - luma.y));
 
     float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y)) - nudge;
     float4 maximum = lerp(topLeft, bottomRight, step(luma.x, luma.y)) + nudge;
@@ -343,7 +349,7 @@ Output fragment(Varyings input)
 #endif
 
 #if TAA_STORE_FRAGMENT_MOTION_HISTORY
-    color.a = saturate(smoothstep(.002 * _MainTex_TexelSize.z, .0035 * _MainTex_TexelSize.z, length(motion * TAA_MOTION_AMPLIFICATION)));
+    color.a = length(motion * TAA_MOTION_AMPLIFICATION);
 #endif
 
 #if TAA_FINAL_BLEND_METHOD == 0
@@ -363,7 +369,7 @@ Output fragment(Varyings input)
     color = lerp(color, history, weight);
 #elif TAA_FINAL_BLEND_METHOD == 2
     float weight = clamp(lerp(TAA_FINAL_BLEND_STATIC_FACTOR, TAA_FINAL_BLEND_DYNAMIC_FACTOR,
-            length(motion) * TAA_MOTION_AMPLIFICATION), TAA_FINAL_BLEND_DYNAMIC_FACTOR, TAA_FINAL_BLEND_STATIC_FACTOR);
+            history.a), TAA_FINAL_BLEND_DYNAMIC_FACTOR, TAA_FINAL_BLEND_STATIC_FACTOR);
 
     color = lerp(color, history, weight);
 #endif
