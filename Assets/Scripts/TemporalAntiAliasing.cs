@@ -89,30 +89,30 @@ namespace UnityStandardAssets.CinematicEffects
                 {
                     return new Settings
                     {
-            		jitterSettings = new JitterSettings
-	                {
-	                    sequence = Sequence.Halton,
-	                    spread = 1f,
-	                    sampleCount = 8
-	                },
+                        jitterSettings = new JitterSettings
+                        {
+                            sequence = Sequence.Halton,
+                            spread = 1f,
+                            sampleCount = 8
+                        },
 
-	                sharpenFilterSettings = new SharpenFilterSettings
-	                {
-	                    amount = 0.25f
-	                },
+                        sharpenFilterSettings = new SharpenFilterSettings
+                        {
+                            amount = 0.25f
+                        },
 
-	                blendSettings = new BlendSettings
-	                {
-	                    stationary = 0.98f,
-	                    moving = 0.8f,
+                        blendSettings = new BlendSettings
+                        {
+                            stationary = 0.98f,
+                            moving = 0.8f,
 
-	                    motionAmplification = 60f
-	                },
+                            motionAmplification = 60f
+                        },
 
-	                debugSettings = new DebugSettings
-	                {
-	                    forceRepaint = false
-	                }
+                        debugSettings = new DebugSettings
+                        {
+                            forceRepaint = false
+                        }
                     };
                 }
             }
