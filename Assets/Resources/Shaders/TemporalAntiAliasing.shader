@@ -32,6 +32,7 @@ Shader "Hidden/Temporal Anti-aliasing"
             ENDCG
         }
 
+        // First frame History blit
         Pass
         {
             CGPROGRAM
@@ -70,6 +71,7 @@ Shader "Hidden/Temporal Anti-aliasing"
             ENDCG
         }
 
+        // First frame History blit
         Pass
         {
             CGPROGRAM
