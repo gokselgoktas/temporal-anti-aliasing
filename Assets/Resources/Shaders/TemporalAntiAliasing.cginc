@@ -314,7 +314,7 @@ Output fragment(Varyings input)
         color = max(0, color);
     #endif
 
-    float4 average = (corners + color) * .142857;
+    float4 average = (topLeft + bottomRight) * .5;
 
     #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
         average = map(average);
