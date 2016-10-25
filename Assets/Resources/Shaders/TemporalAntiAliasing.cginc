@@ -143,12 +143,12 @@ float2 getClosestFragment(in float2 uv)
         float3 result = float3(0., 0., _CameraDepthTexture.Sample(sampler_CameraDepthTexture, uv).r);
     #else
         const float4 neighborhood = float4(
-            tex2D(_CameraDepthTexture, uv - k).r,
-            tex2D(_CameraDepthTexture, uv + float2(k.x, -k.y)).r,
-            tex2D(_CameraDepthTexture, uv + float2(-k.x, k.y)).r,
-            tex2D(_CameraDepthTexture, uv + k).r
+            SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv - k),
+            SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv + float2(k.x, -k.y)),
+            SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv + float2(-k.x, k.y)),
+            SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv + k)
         );
-        float3 result = float3(0., 0., tex2D(_CameraDepthTexture, uv).r);
+        float3 result = float3(0.0, 0.0, SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv));
     #endif
 
     #if TAA_USE_EXPERIMENTAL_OPTIMIZATIONS
