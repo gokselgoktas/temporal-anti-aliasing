@@ -282,6 +282,10 @@ namespace UnityStandardAssets.CinematicEffects
 #endif
 
             camera_.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
+
+#if UNITY_5_5_OR_NEWER
+            camera_.useJitteredProjectionMatrixForTransparentRendering = true;
+#endif
         }
 
         void OnDisable()
