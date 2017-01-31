@@ -1,3 +1,6 @@
+#ifndef __TAA__
+#define __TAA__
+
 #pragma only_renderers ps4 xboxone d3d11 d3d9 xbox360 opengl glcore
 #pragma exclude_renderers gles
 
@@ -390,3 +393,5 @@ Output fragment(Varyings input)
 
     return output;
 }
+
+#endif
