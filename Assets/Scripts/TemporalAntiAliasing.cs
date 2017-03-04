@@ -151,7 +151,7 @@ namespace UnityStandardAssets.CinematicEffects
         }
 
         private Camera m_Camera;
-        public Camera camera_
+        public new Camera camera
         {
             get
             {
@@ -219,33 +219,33 @@ namespace UnityStandardAssets.CinematicEffects
         // https://github.com/playdeadgames/temporal/blob/master/Assets/Scripts/Extensions.cs
         private Matrix4x4 GetPerspectiveProjectionMatrix(Vector2 offset)
         {
-            float vertical = Mathf.Tan(0.5f * Mathf.Deg2Rad * camera_.fieldOfView);
-            float horizontal = vertical * camera_.aspect;
+            float vertical = Mathf.Tan(0.5f * Mathf.Deg2Rad * camera.fieldOfView);
+            float horizontal = vertical * camera.aspect;
 
-            offset.x *= horizontal / (0.5f * camera_.pixelWidth);
-            offset.y *= vertical / (0.5f * camera_.pixelHeight);
+            offset.x *= horizontal / (0.5f * camera.pixelWidth);
+            offset.y *= vertical / (0.5f * camera.pixelHeight);
 
-            float left = (offset.x - horizontal) * camera_.nearClipPlane;
-            float right = (offset.x + horizontal) * camera_.nearClipPlane;
-            float top = (offset.y + vertical) * camera_.nearClipPlane;
-            float bottom = (offset.y - vertical) * camera_.nearClipPlane;
+            float left = (offset.x - horizontal) * camera.nearClipPlane;
+            float right = (offset.x + horizontal) * camera.nearClipPlane;
+            float top = (offset.y + vertical) * camera.nearClipPlane;
+            float bottom = (offset.y - vertical) * camera.nearClipPlane;
 
             Matrix4x4 matrix = new Matrix4x4();
 
-            matrix[0, 0] = (2.0f * camera_.nearClipPlane) / (right - left);
+            matrix[0, 0] = (2.0f * camera.nearClipPlane) / (right - left);
             matrix[0, 1] = 0.0f;
             matrix[0, 2] = (right + left) / (right - left);
             matrix[0, 3] = 0.0f;
 
             matrix[1, 0] = 0.0f;
-            matrix[1, 1] = (2.0f * camera_.nearClipPlane) / (top - bottom);
+            matrix[1, 1] = (2.0f * camera.nearClipPlane) / (top - bottom);
             matrix[1, 2] = (top + bottom) / (top - bottom);
             matrix[1, 3] = 0.0f;
 
             matrix[2, 0] = 0.0f;
             matrix[2, 1] = 0.0f;
-            matrix[2, 2] = -(camera_.farClipPlane + camera_.nearClipPlane) / (camera_.farClipPlane - camera_.nearClipPlane);
-            matrix[2, 3] = -(2.0f * camera_.farClipPlane * camera_.nearClipPlane) / (camera_.farClipPlane - camera_.nearClipPlane);
+            matrix[2, 2] = -(camera.farClipPlane + camera.nearClipPlane) / (camera.farClipPlane - camera.nearClipPlane);
+            matrix[2, 3] = -(2.0f * camera.farClipPlane * camera.nearClipPlane) / (camera.farClipPlane - camera.nearClipPlane);
 
             matrix[3, 0] = 0.0f;
             matrix[3, 1] = 0.0f;
@@ -257,18 +257,18 @@ namespace UnityStandardAssets.CinematicEffects
 
         private Matrix4x4 GetOrthographicProjectionMatrix(Vector2 offset)
         {
-            float vertical = camera_.orthographicSize;
-            float horizontal = vertical * camera_.aspect;
+            float vertical = camera.orthographicSize;
+            float horizontal = vertical * camera.aspect;
 
-            offset.x *= horizontal / (0.5f * camera_.pixelWidth);
-            offset.y *= vertical / (0.5f * camera_.pixelHeight);
+            offset.x *= horizontal / (0.5f * camera.pixelWidth);
+            offset.y *= vertical / (0.5f * camera.pixelHeight);
 
             float left = offset.x - horizontal;
             float right = offset.x + horizontal;
             float top = offset.y + vertical;
             float bottom = offset.y - vertical;
 
-            return Matrix4x4.Ortho(left, right, bottom, top, camera_.nearClipPlane, camera_.farClipPlane);
+            return Matrix4x4.Ortho(left, right, bottom, top, camera.nearClipPlane, camera.farClipPlane);
         }
 
         void OnEnable()
@@ -281,10 +281,10 @@ namespace UnityStandardAssets.CinematicEffects
             UnityEditor.EditorApplication.update += ForceRepaint;
 #endif
 
-            camera_.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
+            camera.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
 
 #if UNITY_5_5_OR_NEWER
-            camera_.useJitteredProjectionMatrixForTransparentRendering = true;
+            camera.useJitteredProjectionMatrixForTransparentRendering = true;
 #endif
         }
 
@@ -296,7 +296,7 @@ namespace UnityStandardAssets.CinematicEffects
                 m_History = null;
             }
 
-            camera_.depthTextureMode &= ~(DepthTextureMode.MotionVectors);
+            camera.depthTextureMode &= ~(DepthTextureMode.MotionVectors);
             m_SampleIndex = 0;
         }
 
@@ -306,15 +306,15 @@ namespace UnityStandardAssets.CinematicEffects
             jitter *= settings.jitterSettings.spread;
 
 #if UNITY_5_4_OR_NEWER
-            camera_.nonJitteredProjectionMatrix = camera_.projectionMatrix;
+            camera.nonJitteredProjectionMatrix = camera.projectionMatrix;
 #endif
 
-            camera_.projectionMatrix = camera_.orthographic
+            camera.projectionMatrix = camera.orthographic
                 ? GetOrthographicProjectionMatrix(jitter)
                 : GetPerspectiveProjectionMatrix(jitter);
 
-            jitter.x /= camera_.pixelWidth;
-            jitter.y /= camera_.pixelHeight;
+            jitter.x /= camera.pixelWidth;
+            jitter.y /= camera.pixelHeight;
 
             material.SetVector("_Jitter", jitter);
         }
@@ -360,7 +360,7 @@ namespace UnityStandardAssets.CinematicEffects
             renderTargets[1] = temporary.colorBuffer;
 
             Graphics.SetRenderTarget(renderTargets, effectDestination.depthBuffer);
-            RenderFullScreenQuad(camera_.orthographic ? 1 : 0);
+            RenderFullScreenQuad(camera.orthographic ? 1 : 0);
 
             RenderTexture.ReleaseTemporary(m_History);
             m_History = temporary;
@@ -376,7 +376,7 @@ namespace UnityStandardAssets.CinematicEffects
 
         public void OnPostRender()
         {
-            camera_.ResetProjectionMatrix();
+            camera.ResetProjectionMatrix();
         }
 
 #if UNITY_EDITOR
