@@ -86,7 +86,7 @@ float2 _Jitter;
     float4 _FinalBlendParameters;
 #endif
 
-Varyings vertex(Input input)
+Varyings vertex(in Input input)
 {
     Varyings output;
 
@@ -203,7 +203,7 @@ float4 clipToAABB(in float4 color, in float p, in float3 minimum, in float3 maxi
     }
 }
 
-Output fragment(Varyings input)
+Output fragment(in Varyings input)
 {
 #if TAA_DILATE_MOTION_VECTOR_SAMPLE
     float2 motion = tex2D(_CameraMotionVectorsTexture, getClosestFragment(input.uv.zw)).xy;
