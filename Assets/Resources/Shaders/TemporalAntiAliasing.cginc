@@ -42,6 +42,12 @@
     #define TAA_MOTION_AMPLIFICATION _FinalBlendParameters.z
 #endif
 
+#ifdef UNITY_REVERSED_Z
+    #define TAA_COMPARE_DEPTH(a, b) step(b, a)
+#else
+    #define TAA_COMPARE_DEPTH(a, b) step(a, b)
+#endif
+
 struct Input
 {
     float4 vertex : POSITION;
@@ -153,22 +159,36 @@ float2 getClosestFragment(in float2 uv)
     #endif
 
     #if TAA_USE_EXPERIMENTAL_OPTIMIZATIONS
-        result = lerp(result, float3(-1., -1., neighborhood.x), step(neighborhood.x, result.z));
-        result = lerp(result, float3(1., -1., neighborhood.y), step(neighborhood.y, result.z));
-        result = lerp(result, float3(-1., 1., neighborhood.z), step(neighborhood.z, result.z));
-        result = lerp(result, float3(1., 1., neighborhood.w), step(neighborhood.w, result.z));
+        result = lerp(result, float3(-1., -1., neighborhood.x), TAA_COMPARE_DEPTH(neighborhood.x, result.z));
+        result = lerp(result, float3(1., -1., neighborhood.y), TAA_COMPARE_DEPTH(neighborhood.y, result.z));
+        result = lerp(result, float3(-1., 1., neighborhood.z), TAA_COMPARE_DEPTH(neighborhood.z, result.z));
+        result = lerp(result, float3(1., 1., neighborhood.w), TAA_COMPARE_DEPTH(neighborhood.w, result.z));
     #else
-        if (neighborhood.x < result.z)
-            result = float3(-1., -1., neighborhood.x);
+        #ifdef UNITY_REVERSED_Z
+            if (neighborhood.x > result.z)
+                result = float3(-1., -1., neighborhood.x);
 
-        if (neighborhood.y < result.z)
-            result = float3(1., -1., neighborhood.y);
+            if (neighborhood.y > result.z)
+                result = float3(1., -1., neighborhood.y);
 
-        if (neighborhood.z < result.z)
-            result = float3(-1., 1., neighborhood.z);
+            if (neighborhood.z > result.z)
+                result = float3(-1., 1., neighborhood.z);
 
-        if (neighborhood.w < result.z)
-            result = float3(1., 1., neighborhood.w);
+            if (neighborhood.w > result.z)
+                result = float3(1., 1., neighborhood.w);
+        #else
+            if (neighborhood.x < result.z)
+                result = float3(-1., -1., neighborhood.x);
+
+            if (neighborhood.y < result.z)
+                result = float3(1., -1., neighborhood.y);
+
+            if (neighborhood.z < result.z)
+                result = float3(-1., 1., neighborhood.z);
+
+            if (neighborhood.w < result.z)
+                result = float3(1., 1., neighborhood.w);
+        #endif
     #endif
 
     return (uv + result.xy * k);
